@@ -62,7 +62,7 @@ $relatedArticles = array(
                 <div class="top-actions">
                     <div class="search">Tìm kiếm tin tức... <i class="fa-solid fa-magnifying-glass"></i></div>
                     <a class="login" href="#">Đăng nhập</a>
-                    <a class="signup" href="#">Đăng ký</a>
+                    <a class="signup" href="?page=register">Đăng ký</a>
                 </div>
             </div>
         </div>

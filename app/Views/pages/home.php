@@ -127,7 +127,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
                 <div class="top-actions">
                     <div class="search">Tìm kiếm tin tức... <i class="fa-solid fa-magnifying-glass"></i></div>
                     <a class="login" href="#">Đăng nhập</a>
-                    <a class="signup" href="#">Đăng ký</a>
+                    <a class="signup" href="?page=register">Đăng ký</a>
                 </div>
             </div>
         </div>
@@ -215,7 +215,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
                 <h2>Cập nhật tin tức bóng đá<br>nhanh nhất, chính xác nhất</h2>
                 <p>Đồng hành cùng bạn trên mọi hành trình của trái bóng tròn</p>
             </div>
-            <a href="#">Đăng ký ngay <i class="fa-solid fa-arrow-right"></i></a>
+            <a href="?page=register">Đăng ký ngay <i class="fa-solid fa-arrow-right"></i></a>
         </section>
     </main>
 

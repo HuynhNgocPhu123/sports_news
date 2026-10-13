@@ -9,4 +9,9 @@ if ($page === 'detail') {
     exit;
 }
 
+if ($page === 'register') {
+    require __DIR__ . '/app/Views/pages/register.php';
+    exit;
+}
+
 require __DIR__ . '/app/Views/pages/home.php';
