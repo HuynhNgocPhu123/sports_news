@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <script>
             <?php if ($loginResult['success']) : ?>
                 window.alert(<?php echo json_encode('Đăng nhập thành công với role: ' . $loginResult['role_name'], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
-                window.location.href = './';
+                window.location.href = <?php echo json_encode((int) $loginResult['role_id'] === 1 ? '?page=admin' : './', JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
             <?php else : ?>
                 window.alert(<?php echo json_encode($loginResult['message'], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
             <?php endif; ?>

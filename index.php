@@ -30,4 +30,9 @@ if ($page === 'login') {
     exit;
 }
 
+if ($page === 'admin') {
+    require __DIR__ . '/app/Views/pages/admin.php';
+    exit;
+}
+
 require __DIR__ . '/app/Views/pages/home.php';

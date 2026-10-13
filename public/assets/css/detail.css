@@ -22,6 +22,8 @@ header { position: sticky; top: 0; z-index: 20; }
 .account-menu { align-items: center; display: flex; gap: 12px; }
 .account-name { background: #eef8f5; border: 1px solid #d8eee7; border-radius: 18px; color: var(--dark); font-size: 12px; font-weight: 700; max-width: 190px; overflow: hidden; padding: 7px 13px; text-overflow: ellipsis; white-space: nowrap; }
 .account-name i { color: var(--green); margin-right: 4px; }
+.admin-link { background: #fff5df; border: 1px solid #f1d79e; border-radius: 18px; color: #986b16; font-size: 11px; font-weight: 700; padding: 7px 12px; transition: background .2s, color .2s; }
+.admin-link:hover { background: #986b16; color: white; }
 .logout-link { border: 1px solid #f0d8d5; border-radius: 18px; color: #b34b42; font-size: 11px; font-weight: 700; padding: 7px 12px; transition: background .2s, color .2s; }
 .logout-link:hover { background: #b34b42; color: white; }
 .nav { background: #fff; border-bottom: 1px solid var(--line); }
@@ -104,6 +106,7 @@ footer { background: #fff; border-top: 1px solid var(--line); color: var(--muted
     .container { width: min(100% - 24px, 1180px); }
     .top-actions .search, .login { display: none; }
     .account-name { max-width: 125px; }
+    .admin-link { padding: 7px 9px; }
     .account-menu { gap: 6px; }
     .article { padding: 20px 17px 26px; }
     .article-content { font-size: 15px; }

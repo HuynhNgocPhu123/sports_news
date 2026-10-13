@@ -65,6 +65,9 @@ $relatedArticles = array(
                     <?php if (is_array($currentUser)) : ?>
                         <div class="account-menu">
                             <span class="account-name"><i class="fa-regular fa-user"></i> <?php echo detailEscape((string) $currentUser['full_name']); ?></span>
+                            <?php if ((int) ($currentUser['role_id'] ?? 0) === 1) : ?>
+                                <a class="admin-link" href="?page=admin"><i class="fa-solid fa-gauge-high"></i> Quản trị</a>
+                            <?php endif; ?>
                             <a class="logout-link" href="?page=logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất</a>
                         </div>
                     <?php else : ?>
