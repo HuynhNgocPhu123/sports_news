@@ -153,7 +153,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
                 <img class="hero-image" src="<?php echo e($heroArticle['image']); ?>" alt="<?php echo e($heroArticle['title']); ?>">
                 <div class="hero-content">
                     <span class="tag"><?php echo e($heroArticle['category']); ?></span>
-                    <h1><?php echo e($heroArticle['title']); ?></h1>
+                    <h1><a href="?page=detail"><?php echo e($heroArticle['title']); ?></a></h1>
                     <p class="hero-description"><?php echo e($heroArticle['description']); ?></p>
                     <div class="meta"><?php echo articleMeta($heroArticle); ?></div>
                 </div>
