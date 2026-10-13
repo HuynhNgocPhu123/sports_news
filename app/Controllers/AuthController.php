@@ -4,6 +4,74 @@ declare(strict_types=1);
 
 final class AuthController
 {
+    public static function login(array $input): array
+    {
+        $email = trim((string) ($input['email'] ?? ''));
+        $password = (string) ($input['password'] ?? '');
+
+        if ($email === '' || $password === '') {
+            return array('success' => false, 'message' => 'Vui lòng nhập email và mật khẩu.');
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return array('success' => false, 'message' => 'Địa chỉ email không hợp lệ.');
+        }
+
+        try {
+            require_once __DIR__ . '/../Config/Database.php';
+            $mysqli = Database::connect();
+            $statement = $mysqli->prepare(
+                'SELECT users.user_id, users.password, users.role_id, roles.role_name, users.full_name
+                 FROM users
+                 INNER JOIN roles ON roles.role_id = users.role_id
+                 WHERE users.email = ? AND users.status = 1
+                 LIMIT 1'
+            );
+            $statement->bind_param('s', $email);
+            $statement->execute();
+            $statement->bind_result($userId, $passwordHash, $roleId, $roleName, $fullName);
+
+            if (!$statement->fetch()) {
+                $statement->close();
+                $mysqli->close();
+
+                return array('success' => false, 'message' => 'Email hoặc mật khẩu không chính xác.');
+            }
+
+            $statement->close();
+            $mysqli->close();
+
+            if (!password_verify($password, $passwordHash)) {
+                return array('success' => false, 'message' => 'Email hoặc mật khẩu không chính xác.');
+            }
+
+            $loginData = array(
+                'success' => true,
+                'message' => 'Đăng nhập thành công.',
+                'user_id' => $userId,
+                'role_id' => $roleId,
+                'role_name' => $roleName,
+                'full_name' => $fullName,
+            );
+
+            session_regenerate_id(true);
+            $_SESSION['auth'] = array(
+                'user_id' => $loginData['user_id'],
+                'role_id' => $loginData['role_id'],
+                'role_name' => $loginData['role_name'],
+                'full_name' => $loginData['full_name'],
+            );
+
+            return $loginData;
+        } catch (mysqli_sql_exception | RuntimeException $exception) {
+            if (isset($mysqli) && $mysqli instanceof mysqli) {
+                $mysqli->close();
+            }
+
+            return array('success' => false, 'message' => 'Không thể đăng nhập lúc này. Vui lòng thử lại sau.');
+        }
+    }
+
     public static function register(array $input): array
     {
         $fullName = trim((string) ($input['full_name'] ?? ''));

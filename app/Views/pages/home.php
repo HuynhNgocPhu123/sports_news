@@ -108,6 +108,7 @@ function articleMeta(array $article): string
 }
 
 $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+$currentUser = $_SESSION['auth'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -126,8 +127,15 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
                 <a class="brand" href="/sport_news/"><span class="brand-mark"><i class="fa-solid fa-futbol"></i></span><?php echo e($siteName); ?></a>
                 <div class="top-actions">
                     <div class="search">Tìm kiếm tin tức... <i class="fa-solid fa-magnifying-glass"></i></div>
-                    <a class="login" href="#">Đăng nhập</a>
-                    <a class="signup" href="?page=register">Đăng ký</a>
+                    <?php if (is_array($currentUser)) : ?>
+                        <div class="account-menu">
+                            <span class="account-name"><i class="fa-regular fa-user"></i> <?php echo e((string) $currentUser['full_name']); ?></span>
+                            <a class="logout-link" href="?page=logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất</a>
+                        </div>
+                    <?php else : ?>
+                        <a class="login" href="?page=login">Đăng nhập</a>
+                        <a class="signup" href="?page=register">Đăng ký</a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

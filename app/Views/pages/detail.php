@@ -30,6 +30,7 @@ function detailEscape(string $value): string
 }
 
 $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+$currentUser = $_SESSION['auth'] ?? null;
 $article = array(
     'category' => 'Bóng đá',
     'title' => 'Man Utd xác nhận kế hoạch chiêu mộ tiền đạo hàng đầu châu Âu',
@@ -61,8 +62,15 @@ $relatedArticles = array(
                 <a class="brand" href="./"><span class="brand-mark"><i class="fa-solid fa-futbol"></i></span><?php echo detailEscape($siteName); ?></a>
                 <div class="top-actions">
                     <div class="search">Tìm kiếm tin tức... <i class="fa-solid fa-magnifying-glass"></i></div>
-                    <a class="login" href="#">Đăng nhập</a>
-                    <a class="signup" href="?page=register">Đăng ký</a>
+                    <?php if (is_array($currentUser)) : ?>
+                        <div class="account-menu">
+                            <span class="account-name"><i class="fa-regular fa-user"></i> <?php echo detailEscape((string) $currentUser['full_name']); ?></span>
+                            <a class="logout-link" href="?page=logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất</a>
+                        </div>
+                    <?php else : ?>
+                        <a class="login" href="?page=login">Đăng nhập</a>
+                        <a class="signup" href="?page=register">Đăng ký</a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

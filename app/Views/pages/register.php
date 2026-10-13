@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </label>
                 <button class="submit-button" type="submit">Đăng ký tài khoản <i class="fa-solid fa-arrow-right"></i></button>
             </form>
-            <p class="login-link">Bạn đã có tài khoản? <a href="#">Đăng nhập</a></p>
+            <p class="login-link">Bạn đã có tài khoản? <a href="?page=login">Đăng nhập</a></p>
             <a class="back-home" href="./"><i class="fa-solid fa-arrow-left"></i> Quay lại trang chủ</a>
         </section>
     </main>
