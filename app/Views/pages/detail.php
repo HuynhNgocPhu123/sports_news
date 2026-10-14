@@ -52,6 +52,12 @@ try {
     if ($article === null) {
         $articleError = 'Không tìm thấy bài viết hoặc bài viết chưa được đăng.';
     } else {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+            if (ArticleController::incrementViews((int) $article['article_id'])) {
+                $article['views'] = (int) ($article['views'] ?? 0) + 1;
+            }
+        }
+
         if (
             ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST'
             && in_array(($_POST['rating_action'] ?? ''), array('create', 'update', 'delete'), true)
@@ -311,7 +317,7 @@ $articleDate = is_array($article) && !empty($article['published_at'])
         <div class="container footer-inner">
             <strong><i class="fa-solid fa-futbol"></i> <?php echo detailEscape($siteName); ?></strong>
             <span>Giới thiệu &nbsp; | &nbsp; Điều khoản sử dụng &nbsp; | &nbsp; Chính sách bảo mật &nbsp; | &nbsp; Liên hệ</span>
-            <span>© 2025 Football News. Tất cả quyền được bảo lưu.</span>
+            <span>© 2026 Football News. Tất cả quyền được bảo lưu.</span>
         </div>
     </footer>
     <script>

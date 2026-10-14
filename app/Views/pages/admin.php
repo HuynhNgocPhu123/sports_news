@@ -299,7 +299,7 @@ $navigationIcons = [
                         </div>
 
                         <div>
-                            <strong>128</strong>
+                            <strong><?php echo count($articles); ?></strong>
                             <span>Tổng bài viết</span>
                         </div>
                     </div>
@@ -799,7 +799,7 @@ $navigationIcons = [
         </main>
 
         <footer class="admin-footer">
-            Football News Admin &copy; 2025 - Khu vực quản trị nội dung
+            Football News Admin &copy; 2026 - Khu vực quản trị nội dung
         </footer>
 
     </div>

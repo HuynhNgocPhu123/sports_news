@@ -403,6 +403,32 @@ final class ArticleController
         }
     }
 
+    public static function incrementViews(int $articleId): bool
+    {
+        if ($articleId < 1) {
+            return false;
+        }
+
+        require_once __DIR__ . '/../Config/Database.php';
+        $mysqli = Database::connect();
+
+        try {
+            $statement = $mysqli->prepare(
+                'UPDATE articles
+                 SET views = COALESCE(views, 0) + 1
+                 WHERE article_id = ? AND status = \'published\''
+            );
+            $statement->bind_param('i', $articleId);
+            $statement->execute();
+            $updated = $statement->affected_rows === 1;
+            $statement->close();
+
+            return $updated;
+        } finally {
+            $mysqli->close();
+        }
+    }
+
     public static function relatedPublished(int $categoryId, int $articleId, int $limit = 3): array
     {
         require_once __DIR__ . '/../Config/Database.php';

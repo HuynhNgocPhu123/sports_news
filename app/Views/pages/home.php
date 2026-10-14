@@ -158,7 +158,7 @@ $currentUser = $_SESSION['auth'] ?? null;
                 <p>Các bài viết mới nhất thuộc danh mục này</p>
             </div>
         <?php endif; ?>
-        <section class="top-grid">
+        <section class="top-grid scroll-reveal">
             <article class="hero">
                 <?php if ($heroArticle !== null) : ?>
                     <a class="article-image-link" href="?page=detail&amp;slug=<?php echo rawurlencode((string) $heroArticle['slug']); ?>">
@@ -201,7 +201,7 @@ $currentUser = $_SESSION['auth'] ?? null;
             <p class="database-error">Danh mục này chưa có bài viết đã đăng.</p>
         <?php endif; ?>
 
-        <section>
+        <section class="scroll-reveal">
             <div class="section-title"><h2>Tin nổi bật</h2><a class="view-all" href="#">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
             <div class="featured-grid">
                 <?php foreach ($featuredArticles as $article) : ?>
@@ -222,7 +222,7 @@ $currentUser = $_SESSION['auth'] ?? null;
             <?php endif; ?>
         </section>
 
-        <section>
+        <section class="scroll-reveal">
             <div class="section-title"><h2>Danh mục tin tức</h2><a class="view-all" href="#">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
             <div class="category-grid">
                 <?php foreach ($categories as $category) : ?>
@@ -240,7 +240,7 @@ $currentUser = $_SESSION['auth'] ?? null;
             <?php endif; ?>
         </section>
 
-        <section class="cta">
+        <section class="cta scroll-reveal">
             <div>
                 <h2>Cập nhật tin tức bóng đá<br>nhanh nhất, chính xác nhất</h2>
                 <p>Đồng hành cùng bạn trên mọi hành trình của trái bóng tròn</p>
@@ -248,12 +248,41 @@ $currentUser = $_SESSION['auth'] ?? null;
             <a href="?page=register">Đăng ký ngay <i class="fa-solid fa-arrow-right"></i></a>
         </section>
     </main>
+    <script>
+        (function () {
+            var revealItems = document.querySelectorAll('.scroll-reveal');
+            if (!('IntersectionObserver' in window)) {
+                revealItems.forEach(function (item) {
+                    item.classList.add('is-visible');
+                });
+                return;
+            }
+
+            var observer = new IntersectionObserver(function (entries, currentObserver) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) {
+                        return;
+                    }
+
+                    entry.target.classList.add('is-visible');
+                    currentObserver.unobserve(entry.target);
+                });
+            }, {
+                rootMargin: '0px 0px -10% 0px',
+                threshold: 0.08
+            });
+
+            revealItems.forEach(function (item) {
+                observer.observe(item);
+            });
+        }());
+    </script>
 
     <footer>
         <div class="container footer-inner">
             <strong><i class="fa-solid fa-futbol"></i> <?php echo e($siteName); ?></strong>
             <span>Giới thiệu &nbsp; | &nbsp; Điều khoản sử dụng &nbsp; | &nbsp; Chính sách bảo mật &nbsp; | &nbsp; Liên hệ</span>
-            <span>© 2025 Football News. Tất cả quyền được bảo lưu.</span>
+            <span>© 2026 Football News. Tất cả quyền được bảo lưu.</span>
         </div>
     </footer>
 </body>
