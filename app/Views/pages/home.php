@@ -4,82 +4,14 @@ declare(strict_types=1);
 
 $siteName = 'Football News';
 
-$heroArticle = array(
-    'category' => 'Ngoại hạng Anh',
-    'title' => 'Man Utd xác nhận kế hoạch chiêu mộ tiền đạo hàng đầu châu Âu',
-    'description' => 'Manchester United đang lên kế hoạch chiêu mộ một tiền đạo đẳng cấp nhằm cải thiện hàng công trong kỳ chuyển nhượng mùa hè 2025.',
-    'image' => 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=1200&q=85',
-    'date' => '12/08/2025',
-    'comments' => 24,
-);
-
-$latestArticles = array(
-    array(
-        'category' => 'Chuyển nhượng',
-        'title' => 'Real Madrid chính thức chiêu mộ ngôi sao trẻ từ Bundesliga',
-        'image' => 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=400&q=80',
-        'date' => '11/08/2025',
-        'comments' => 15,
-    ),
-    array(
-        'category' => 'Việt Nam',
-        'title' => 'Đội tuyển Việt Nam hội quân, hướng tới vòng loại Asian Cup 2027',
-        'image' => 'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=400&q=80',
-        'date' => '10/08/2025',
-        'comments' => 8,
-    ),
-    array(
-        'category' => 'Champions League',
-        'title' => 'UEFA công bố thể thức mới của Champions League mùa tới',
-        'image' => 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=400&q=80',
-        'date' => '09/08/2025',
-        'comments' => 12,
-    ),
-    array(
-        'category' => 'La Liga',
-        'title' => 'Barcelona tiếp tục khẳng định sức mạnh với chiến thắng 4-0',
-        'image' => 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=400&q=80',
-        'date' => '09/08/2025',
-        'comments' => 10,
-    ),
-);
-
-$featuredArticles = array(
-    array(
-        'category' => 'Chuyển nhượng',
-        'title' => 'Ronaldo xác nhận tương lai, người hâm mộ có thể yên tâm',
-        'image' => 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=600&q=80',
-        'date' => '11/08/2025',
-        'comments' => 32,
-    ),
-    array(
-        'category' => 'Ngoại hạng Anh',
-        'title' => 'Salah lập kỷ lục mới trong màu áo Liverpool',
-        'image' => 'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=600&q=80',
-        'date' => '10/08/2025',
-        'comments' => 18,
-    ),
-    array(
-        'category' => 'La Liga',
-        'title' => 'Real Madrid thắng đậm ngày ra quân La Liga 2025/26',
-        'image' => 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=600&q=80',
-        'date' => '10/08/2025',
-        'comments' => 15,
-    ),
-    array(
-        'category' => 'Việt Nam',
-        'title' => 'Quang Hải: Tôi luôn muốn cống hiến cho đội tuyển',
-        'image' => 'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=600&q=80',
-        'date' => '09/08/2025',
-        'comments' => 27,
-    ),
-);
-
 $categories = array();
 $categoryError = '';
+$articles = array();
+$articleError = '';
 
 try {
     require_once __DIR__ . '/../../Config/Database.php';
+    require_once __DIR__ . '/../../Controllers/ArticleController.php';
     $mysqli = Database::connect();
 
     $categoryResult = $mysqli->query(
@@ -97,6 +29,12 @@ try {
     }
 }
 
+try {
+    $articles = ArticleController::published();
+} catch (mysqli_sql_exception | RuntimeException $exception) {
+    $articleError = $exception->getMessage();
+}
+
 function e(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
@@ -104,9 +42,15 @@ function e(string $value): string
 
 function articleMeta(array $article): string
 {
-    return '<span><i class="fa-regular fa-calendar"></i> ' . e($article['date']) . '</span><span><i class="fa-regular fa-comment"></i> ' . e((string) $article['comments']) . '</span>';
+    $date = $article['published_at'] ?? $article['created_at'] ?? null;
+    $formattedDate = $date ? date('d/m/Y H:i', strtotime((string) $date)) : 'Chưa đăng';
+
+    return '<span><i class="fa-regular fa-calendar"></i> ' . e($formattedDate) . '</span><span><i class="fa-regular fa-eye"></i> ' . e((string) ($article['views'] ?? 0)) . '</span>';
 }
 
+$heroArticle = $articles[0] ?? null;
+$latestArticles = array_slice($articles, 1, 4);
+$featuredArticles = array_slice($articles, 0, 4);
 $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 $currentUser = $_SESSION['auth'] ?? null;
 ?>
@@ -161,13 +105,21 @@ $currentUser = $_SESSION['auth'] ?? null;
     <main class="container">
         <section class="top-grid">
             <article class="hero">
-                <img class="hero-image" src="<?php echo e($heroArticle['image']); ?>" alt="<?php echo e($heroArticle['title']); ?>">
-                <div class="hero-content">
-                    <span class="tag"><?php echo e($heroArticle['category']); ?></span>
-                    <h1><a href="?page=detail"><?php echo e($heroArticle['title']); ?></a></h1>
-                    <p class="hero-description"><?php echo e($heroArticle['description']); ?></p>
-                    <div class="meta"><?php echo articleMeta($heroArticle); ?></div>
-                </div>
+                <?php if ($heroArticle !== null) : ?>
+                    <img class="hero-image" src="<?php echo e((string) ($heroArticle['images'] ?? '')); ?>" alt="ảnh lỗi">
+                    <div class="hero-content">
+                        <span class="tag"><?php echo e((string) ($heroArticle['category_name'] ?? 'Chưa phân loại')); ?></span>
+                        <h1><a href="?page=detail&amp;slug=<?php echo rawurlencode((string) $heroArticle['slug']); ?>"><?php echo e((string) $heroArticle['title']); ?></a></h1>
+                        <p class="hero-description"><?php echo e((string) ($heroArticle['summary'] ?? '')); ?></p>
+                        <div class="meta"><?php echo articleMeta($heroArticle); ?></div>
+                    </div>
+                <?php else : ?>
+                    <div class="hero-content">
+                        <span class="tag">Tin tức</span>
+                        <h1>Chưa có bài viết đã đăng</h1>
+                        <p class="hero-description">Các bài viết mới sẽ được hiển thị tại đây.</p>
+                    </div>
+                <?php endif; ?>
                 <div class="slider-dots"><i class="active"></i><i></i><i></i><i></i></div>
             </article>
             <aside>
@@ -175,10 +127,10 @@ $currentUser = $_SESSION['auth'] ?? null;
                 <div class="latest-list">
                     <?php foreach ($latestArticles as $article) : ?>
                         <article class="latest-item">
-                            <img src="<?php echo e($article['image']); ?>" alt="">
+                            <img src="<?php echo e((string) ($article['images'] ?? '')); ?>" alt="ảnh lỗi">
                             <div>
-                                <div class="article-category"><?php echo e($article['category']); ?></div>
-                                <h3><?php echo e($article['title']); ?></h3>
+                                <div class="article-category"><?php echo e((string) ($article['category_name'] ?? 'Chưa phân loại')); ?></div>
+                                <h3><a href="?page=detail&amp;slug=<?php echo rawurlencode((string) $article['slug']); ?>"><?php echo e((string) $article['title']); ?></a></h3>
                                 <div class="meta"><?php echo articleMeta($article); ?></div>
                             </div>
                         </article>
@@ -192,15 +144,18 @@ $currentUser = $_SESSION['auth'] ?? null;
             <div class="featured-grid">
                 <?php foreach ($featuredArticles as $article) : ?>
                     <article class="featured-card">
-                        <img src="<?php echo e($article['image']); ?>" alt="">
+                        <img src="<?php echo e((string) ($article['images'] ?? '')); ?>" alt="ảnh lỗi">
                         <div class="card-body">
-                            <div class="article-category"><?php echo e($article['category']); ?></div>
-                            <h3><?php echo e($article['title']); ?></h3>
+                            <div class="article-category"><?php echo e((string) ($article['category_name'] ?? 'Chưa phân loại')); ?></div>
+                            <h3><a href="?page=detail&amp;slug=<?php echo rawurlencode((string) $article['slug']); ?>"><?php echo e((string) $article['title']); ?></a></h3>
                             <div class="meta"><?php echo articleMeta($article); ?></div>
                         </div>
                     </article>
                 <?php endforeach; ?>
             </div>
+            <?php if ($articleError !== '') : ?>
+                <p class="database-error">Không thể tải bài viết: <?php echo e($articleError); ?></p>
+            <?php endif; ?>
         </section>
 
         <section>
