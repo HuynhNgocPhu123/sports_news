@@ -18,6 +18,7 @@ $userError = '';
 $articles = [];
 $articleError = '';
 $categoryActionResult = null;
+$articleActionResult = null;
 
 require_once __DIR__ . '/../../Controllers/CategoryController.php';
 require_once __DIR__ . '/../../Controllers/ArticleController.php';
@@ -32,6 +33,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['category_action
     } else {
         $categoryActionResult = CategoryController::update($_POST, $_FILES['images'] ?? null);
     }
+
+}
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['article_action'] ?? '') !== '') {
+    $articleActionResult = ArticleController::update($_POST, $_FILES['images'] ?? null);
 }
 
 try {
@@ -66,6 +72,17 @@ function adminArticleDate(?string $date): string
     $timestamp = strtotime($date);
 
     return $timestamp === false ? 'Chưa đăng' : date('d/m/Y H:i', $timestamp);
+}
+
+function adminArticleInputDate(?string $date): string
+{
+    if ($date === null || $date === '') {
+        return '';
+    }
+
+    $timestamp = strtotime($date);
+
+    return $timestamp === false ? '' : date('Y-m-d\TH:i', $timestamp);
 }
 
 $section = $_GET['section'] ?? 'dashboard';
@@ -577,23 +594,33 @@ $navigationIcons = [
     </div>
 
 </div>
-<?php if (is_array($categoryActionResult) && $categoryActionResult['success']) : ?>
+<?php if (
+    (is_array($categoryActionResult) && $categoryActionResult['success'])
+    || (is_array($articleActionResult) && $articleActionResult['success'])
+) : ?>
     <div class="update-success-modal" role="status" aria-live="polite">
         <div class="update-success-card">
             <div class="update-success-icon"><i class="fa-solid fa-circle-check"></i></div>
             <h2>
                 <?php
-                echo $categoryAction === 'create'
-                    ? 'Thêm thành công'
-                    : ($categoryAction === 'delete' ? 'Xóa thành công' : 'Cập nhật thành công');
+                echo $articleActionResult !== null
+                    ? 'Cập nhật thành công'
+                    : ($categoryAction === 'create'
+                        ? 'Thêm thành công'
+                        : ($categoryAction === 'delete' ? 'Xóa thành công' : 'Cập nhật thành công'));
                 ?>
             </h2>
-            <p><?php echo adminEscape($categoryActionResult['message']); ?> Trang sẽ tải lại ngay.</p>
+            <p><?php echo adminEscape(
+                (string) (($articleActionResult ?? $categoryActionResult)['message'] ?? '')
+            ); ?> Trang sẽ tải lại ngay.</p>
             <div class="update-progress"><span></span></div>
         </div>
     </div>
 <?php endif; ?>
-<?php if (is_array($categoryActionResult) && $categoryActionResult['success']) : ?>
+<?php if (
+    (is_array($categoryActionResult) && $categoryActionResult['success'])
+    || (is_array($articleActionResult) && $articleActionResult['success'])
+) : ?>
 <script>
     window.setTimeout(function () {
         window.location.replace(window.location.pathname + window.location.search);
