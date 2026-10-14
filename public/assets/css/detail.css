@@ -55,6 +55,18 @@ h1 { font-size: clamp(27px, 4vw, 40px); line-height: 1.18; margin: 9px 0 14px; }
 .rating-box p { color: var(--muted); font-size: 12px; margin: 3px 0 0; }
 .rating-stars { color: #f5ad24; font-size: 18px; white-space: nowrap; }
 .rating-stars strong { color: var(--dark); font-size: 13px; margin-left: 6px; }
+.rating-stars.small { font-size: 11px; margin-top: 5px; }
+.rating-input { align-items: center; display: flex; gap: 4px; padding: 10px 12px; }
+.rating-input span { color: var(--muted); font-size: 12px; margin-right: 6px; }
+.rating-options { display: flex; }
+.rating-input input { display: none; }
+.rating-input label { color: #d8dee0; cursor: pointer; font-size: 18px; }
+.rating-input label.is-hovered,
+.rating-input label.is-selected { color: #f5ad24; }
+.rating-message { border-radius: 4px; font-size: 12px; margin: 12px 0 -12px; padding: 9px 12px; }
+.rating-message.success { background: #effaf6; color: var(--green); }
+.rating-message.error { background: #fff1f0; color: #b34b42; }
+.login-to-rate { color: var(--muted); font-size: 12px; }
 .comments { border-top: 1px solid var(--line); margin-top: 27px; padding-top: 23px; }
 .comments-heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: 14px; }
 .comments-heading h2 span { color: var(--muted); font-size: 13px; font-weight: 400; }
@@ -70,6 +82,14 @@ h1 { font-size: clamp(27px, 4vw, 40px); line-height: 1.18; margin: 9px 0 14px; }
 .comment-time { color: var(--muted); font-size: 11px; }
 .comment-body p { color: #53616a; margin: 4px 0 6px; }
 .comment-body a { color: var(--green); font-size: 11px; font-weight: 700; margin-right: 14px; }
+.comment-actions { display: flex; gap: 10px; margin-top: 8px; }
+.comment-actions form { margin: 0; }
+.comment-action { background: transparent; border: 0; color: var(--green); cursor: pointer; font-size: 11px; padding: 0; }
+.comment-action.delete-rating { color: #b34b42; }
+.edit-rating-form { background: var(--soft); display: none; margin-top: 10px; padding: 10px; }
+.edit-rating-form.is-visible { display: block; }
+.edit-rating-form textarea { border: 1px solid var(--line); display: block; font: inherit; margin: 8px 0; min-height: 65px; padding: 8px; resize: vertical; width: 100%; }
+.edit-rating-form > button { background: var(--green); border: 0; border-radius: 4px; color: #fff; cursor: pointer; padding: 7px 11px; }
 .sidebar-title { border-left: 3px solid var(--green); font-size: 18px; margin: 0 0 12px; padding-left: 9px; }
 .sidebar-card { background: #fff; border: 1px solid var(--line); border-radius: 5px; margin-bottom: 22px; overflow: hidden; }
 .sidebar-card img { display: block; height: 150px; object-fit: cover; width: 100%; }

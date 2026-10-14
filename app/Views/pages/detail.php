@@ -6,6 +6,7 @@ $siteName = 'Football News';
 $categories = array();
 $categoryError = '';
 $articleError = '';
+$ratingResult = null;
 
 try {
     require_once __DIR__ . '/../../Config/Database.php';
@@ -32,11 +33,17 @@ function detailEscape(string $value): string
 
 $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 $currentUser = $_SESSION['auth'] ?? null;
+$ratingResult = $_SESSION['rating_result'] ?? null;
+unset($_SESSION['rating_result']);
 
 require_once __DIR__ . '/../../Controllers/ArticleController.php';
+require_once __DIR__ . '/../../Controllers/RatingController.php';
 $slug = trim((string) ($_GET['slug'] ?? ''));
 $article = null;
 $relatedArticles = array();
+$ratings = array();
+$ratingSummary = array('total_ratings' => 0, 'average_rating' => 0);
+$hasRated = false;
 
 try {
     if ($slug !== '') {
@@ -45,10 +52,42 @@ try {
     if ($article === null) {
         $articleError = 'Không tìm thấy bài viết hoặc bài viết chưa được đăng.';
     } else {
+        if (
+            ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST'
+            && in_array(($_POST['rating_action'] ?? ''), array('create', 'update', 'delete'), true)
+        ) {
+            if (
+                !is_array($currentUser)
+                || (int) ($currentUser['role_id'] ?? 0) !== 2
+            ) {
+                $ratingResult = array('success' => false, 'message' => 'Bạn cần đăng nhập bằng tài khoản người dùng để đánh giá.');
+            } else {
+                $ratingAction = (string) $_POST['rating_action'];
+                $ratingResult = $ratingAction === 'create'
+                    ? RatingController::create($_POST, (int) $currentUser['user_id'])
+                    : ($ratingAction === 'update'
+                        ? RatingController::update($_POST, (int) $currentUser['user_id'])
+                        : RatingController::delete($_POST, (int) $currentUser['user_id']));
+            }
+
+            $_SESSION['rating_result'] = $ratingResult;
+            header(
+                'Location: ?page=detail&slug=' . rawurlencode((string) $article['slug'])
+            );
+            exit;
+        }
         $relatedArticles = ArticleController::relatedPublished(
             (int) $article['category_id'],
             (int) $article['article_id']
         );
+        $ratingSummary = RatingController::summary((int) $article['article_id']);
+        $ratings = RatingController::allForArticle((int) $article['article_id']);
+        if (is_array($currentUser) && (int) ($currentUser['role_id'] ?? 0) === 2) {
+            $hasRated = RatingController::hasRated(
+                (int) $article['article_id'],
+                (int) $currentUser['user_id']
+            );
+        }
     }
 } catch (mysqli_sql_exception | RuntimeException $exception) {
     $articleError = $exception->getMessage();
@@ -133,50 +172,97 @@ $articleDate = is_array($article) && !empty($article['published_at'])
                 <section class="rating-box">
                     <div>
                         <h2>Đánh giá bài viết</h2>
-                        <p>Giúp chúng tôi nâng cao chất lượng nội dung</p>
+                        <p><?php echo (int) $ratingSummary['total_ratings']; ?> lượt đánh giá</p>
                     </div>
                     <div class="rating-stars" aria-label="Đánh giá 5 sao">
-                        <i class="fa-solid fa-star"></i>
-                        <i class="fa-solid fa-star"></i>
-                        <i class="fa-solid fa-star"></i>
-                        <i class="fa-solid fa-star"></i>
-                        <i class="fa-regular fa-star"></i>
-                        <strong>4.8/5</strong>
+                        <?php for ($star = 1; $star <= 5; $star++) : ?>
+                            <i class="fa-<?php echo $star <= round((float) $ratingSummary['average_rating']) ? 'solid' : 'regular'; ?> fa-star"></i>
+                        <?php endfor; ?>
+                        <strong><?php echo number_format((float) $ratingSummary['average_rating'], 1); ?>/5</strong>
                     </div>
                 </section>
+                <?php if (is_array($ratingResult)) : ?>
+                    <p class="rating-message <?php echo $ratingResult['success'] ? 'success' : 'error'; ?>">
+                        <?php echo detailEscape((string) $ratingResult['message']); ?>
+                    </p>
+                <?php endif; ?>
                 <section class="comments">
                     <div class="comments-heading">
-                        <h2>Bình luận <span>(0)</span></h2>
+                        <h2>Bình luận <span>(<?php echo count($ratings); ?>)</span></h2>
                         <select aria-label="Sắp xếp bình luận">
                             <option>Mới nhất</option>
                             <option>Nhiều lượt thích</option>
                         </select>
                     </div>
-                    <form class="comment-form" action="#" method="post">
-                        <textarea name="comment" rows="3" placeholder="Chia sẻ suy nghĩ của bạn về bài viết..." required></textarea>
+                    <?php if (is_array($currentUser) && (int) ($currentUser['role_id'] ?? 0) === 2 && !$hasRated) : ?>
+                    <form class="comment-form" action="?page=detail&amp;slug=<?php echo rawurlencode((string) $article['slug']); ?>" method="post">
+                        <input type="hidden" name="rating_action" value="create">
+                        <input type="hidden" name="article_id" value="<?php echo (int) $article['article_id']; ?>">
+                        <div class="rating-input">
+                            <span>Chọn số sao:</span>
+                            <div class="rating-options">
+                                <?php for ($star = 1; $star <= 5; $star++) : ?>
+                                    <input id="rating-<?php echo $star; ?>" name="rating_value" type="radio" value="<?php echo $star; ?>" required>
+                                    <label for="rating-<?php echo $star; ?>" data-rating="<?php echo $star; ?>" title="<?php echo $star; ?> sao"><i class="fa-solid fa-star"></i></label>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+                        <textarea name="comment" rows="3" maxlength="2000" placeholder="Chia sẻ suy nghĩ của bạn về bài viết..." required></textarea>
                         <div class="comment-form-footer">
                             <span><i class="fa-regular fa-face-smile"></i> Hãy bình luận văn minh</span>
                             <button type="submit">Gửi bình luận <i class="fa-solid fa-paper-plane"></i></button>
                         </div>
                     </form>
-                    <div class="comment-item">
-                        <div class="comment-avatar">NA</div>
-                        <div class="comment-body">
-                            <strong>Nguyễn Anh</strong><span class="comment-time"> · 2 giờ trước</span>
-                            <p>Hy vọng thương vụ này sẽ sớm hoàn tất. Đội hình Man Utd rất cần một tiền đạo chất lượng.</p>
-                            <a href="#"><i class="fa-regular fa-thumbs-up"></i> Thích</a>
-                            <a href="#">Trả lời</a>
+                    <?php elseif ($hasRated) : ?>
+                        <p class="login-to-rate">Bạn đã đánh giá bài viết này. Mỗi tài khoản chỉ được bình luận một lần.</p>
+                    <?php else : ?>
+                        <p class="login-to-rate">Đăng nhập bằng tài khoản người dùng để đánh giá và bình luận bài viết.</p>
+                    <?php endif; ?>
+                    <?php foreach ($ratings as $rating) : ?>
+                        <div class="comment-item">
+                            <div class="comment-avatar"><?php echo detailEscape(strtoupper(substr((string) ($rating['full_name'] ?: $rating['username']), 0, 2))); ?></div>
+                            <div class="comment-body">
+                                <strong><?php echo detailEscape((string) ($rating['full_name'] ?: $rating['username'])); ?></strong>
+                                <p><?php echo detailEscape((string) $rating['comment']); ?></p>
+                                <div class="rating-stars small">
+                                    <?php for ($star = 1; $star <= 5; $star++) : ?>
+                                        <i class="fa-<?php echo $star <= (int) $rating['rating_value'] ? 'solid' : 'regular'; ?> fa-star"></i>
+                                    <?php endfor; ?>
+                                </div>
+                                <?php if (
+                                    is_array($currentUser)
+                                    && (int) ($currentUser['role_id'] ?? 0) === 2
+                                    && (int) ($rating['user_id'] ?? 0) === (int) $currentUser['user_id']
+                                ) : ?>
+                                    <div class="comment-actions">
+                                        <button type="button" class="comment-action edit-rating" data-rating-id="<?php echo (int) $rating['rating_id']; ?>"><i class="fa-solid fa-pen"></i> Sửa</button>
+                                        <form method="post" action="?page=detail&amp;slug=<?php echo rawurlencode((string) $article['slug']); ?>" onsubmit="return confirm('Bạn có chắc muốn xóa đánh giá này không?');">
+                                            <input type="hidden" name="rating_action" value="delete">
+                                            <input type="hidden" name="article_id" value="<?php echo (int) $article['article_id']; ?>">
+                                            <input type="hidden" name="rating_id" value="<?php echo (int) $rating['rating_id']; ?>">
+                                            <button type="submit" class="comment-action delete-rating"><i class="fa-solid fa-trash"></i> Xóa</button>
+                                        </form>
+                                    </div>
+                                    <form class="edit-rating-form" id="edit-rating-<?php echo (int) $rating['rating_id']; ?>" method="post" action="?page=detail&amp;slug=<?php echo rawurlencode((string) $article['slug']); ?>">
+                                        <input type="hidden" name="rating_action" value="update">
+                                        <input type="hidden" name="article_id" value="<?php echo (int) $article['article_id']; ?>">
+                                        <input type="hidden" name="rating_id" value="<?php echo (int) $rating['rating_id']; ?>">
+                                        <div class="rating-input">
+                                            <span>Chọn số sao:</span>
+                                            <div class="rating-options">
+                                                <?php for ($star = 1; $star <= 5; $star++) : ?>
+                                                    <input id="edit-rating-<?php echo (int) $rating['rating_id']; ?>-<?php echo $star; ?>" name="rating_value" type="radio" value="<?php echo $star; ?>" <?php echo $star === (int) $rating['rating_value'] ? 'checked' : ''; ?> required>
+                                                    <label for="edit-rating-<?php echo (int) $rating['rating_id']; ?>-<?php echo $star; ?>" data-rating="<?php echo $star; ?>" title="<?php echo $star; ?> sao"><i class="fa-solid fa-star"></i></label>
+                                                <?php endfor; ?>
+                                            </div>
+                                        </div>
+                                        <textarea name="comment" rows="3" maxlength="2000" required><?php echo detailEscape((string) $rating['comment']); ?></textarea>
+                                        <button type="submit">Lưu thay đổi</button>
+                                    </form>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                    </div>
-                    <div class="comment-item">
-                        <div class="comment-avatar comment-avatar-blue">TH</div>
-                        <div class="comment-body">
-                            <strong>Thanh Hà</strong><span class="comment-time"> · 5 giờ trước</span>
-                            <p>Bài viết cập nhật thông tin rất nhanh và dễ hiểu.</p>
-                            <a href="#"><i class="fa-regular fa-thumbs-up"></i> Thích</a>
-                            <a href="#">Trả lời</a>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </section>
             </article>
 
@@ -228,5 +314,56 @@ $articleDate = is_array($article) && !empty($article['published_at'])
             <span>© 2025 Football News. Tất cả quyền được bảo lưu.</span>
         </div>
     </footer>
+    <script>
+        (function () {
+            var ratingInput = document.querySelector('.rating-input');
+            if (!ratingInput) {
+                return;
+            }
+
+            var options = ratingInput.querySelector('.rating-options');
+            var labels = Array.prototype.slice.call(options.querySelectorAll('label'));
+            var radios = Array.prototype.slice.call(options.querySelectorAll('input'));
+
+            function paint(value, className) {
+                labels.forEach(function (label) {
+                    label.classList.toggle(className, Number(label.dataset.rating) <= value);
+                });
+            }
+
+            options.addEventListener('mouseover', function (event) {
+                var label = event.target.closest('label');
+                if (label) {
+                    labels.forEach(function (item) {
+                        item.classList.remove('is-selected');
+                    });
+                    paint(Number(label.dataset.rating), 'is-hovered');
+                }
+            });
+
+            options.addEventListener('mouseleave', function () {
+                var selected = options.querySelector('input:checked');
+                paint(selected ? Number(selected.value) : 0, 'is-selected');
+                labels.forEach(function (label) {
+                    label.classList.remove('is-hovered');
+                });
+            });
+
+            radios.forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    paint(Number(radio.value), 'is-selected');
+                });
+            });
+
+            document.querySelectorAll('.edit-rating').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var form = document.getElementById('edit-rating-' + button.dataset.ratingId);
+                    if (form) {
+                        form.classList.toggle('is-visible');
+                    }
+                });
+            });
+        }());
+    </script>
 </body>
 </html>

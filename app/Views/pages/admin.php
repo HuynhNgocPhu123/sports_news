@@ -17,13 +17,21 @@ $users = [];
 $userError = '';
 $articles = [];
 $articleError = '';
+$ratings = [];
+$ratingError = '';
 $categoryActionResult = null;
 $articleActionResult = null;
 $userActionResult = null;
+$ratingActionResult = null;
+$categoryAction = '';
+$articleAction = '';
+$userAction = '';
+$ratingAction = '';
 
 require_once __DIR__ . '/../../Controllers/CategoryController.php';
 require_once __DIR__ . '/../../Controllers/ArticleController.php';
 require_once __DIR__ . '/../../Controllers/UserController.php';
+require_once __DIR__ . '/../../Controllers/RatingController.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['category_action'] ?? '') !== '') {
     $categoryAction = (string) $_POST['category_action'];
@@ -62,6 +70,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['user_action'] ?
     }
 }
 
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['rating_action'] ?? '') === 'toggle') {
+    $ratingAction = 'toggle';
+    $ratingActionResult = RatingController::toggleVisibility($_POST);
+}
+
 try {
     $categories = CategoryController::all();
 } catch (mysqli_sql_exception | RuntimeException $exception) {
@@ -78,6 +91,12 @@ try {
     $articles = ArticleController::all();
 } catch (mysqli_sql_exception | RuntimeException $exception) {
     $articleError = $exception->getMessage();
+}
+
+try {
+    $ratings = RatingController::allForAdmin();
+} catch (mysqli_sql_exception | RuntimeException $exception) {
+    $ratingError = $exception->getMessage();
 }
 
 function adminEscape(string $value): string
@@ -127,21 +146,6 @@ $applicationPath = rtrim(
     ),
     '/'
 );
-
-$mockComments = [
-    [
-        'user'    => 'Nguyễn Văn An',
-        'content' => 'Hy vọng thương vụ này sẽ sớm hoàn tất.',
-        'article' => 'Man Utd xác nhận kế hoạch...',
-        'status'  => 'Hiển thị',
-    ],
-    [
-        'user'    => 'Thanh Hà',
-        'content' => 'Bài viết cập nhật thông tin rất nhanh.',
-        'article' => 'Đội tuyển Việt Nam hội quân...',
-        'status'  => 'Đang ẩn',
-    ],
-];
 
 $navigationItems = [
     'dashboard'  => 'Tổng quan',
@@ -328,8 +332,8 @@ $navigationIcons = [
                         </div>
 
                         <div>
-                            <strong>356</strong>
-                            <span>Bình luận</span>
+                            <strong><?php echo count($ratings); ?></strong>
+                            <span>Đánh giá</span>
                         </div>
                     </div>
 
@@ -705,7 +709,10 @@ $navigationIcons = [
                                 <tr>
                                     <th>Người dùng</th>
                                     <th>Nội dung</th>
+                                    <th>Đánh giá</th>
+                                    <th>Mã bài viết</th>
                                     <th>Bài viết</th>
+                                    <th>Ngày gửi</th>
                                     <th>Trạng thái</th>
                                     <th>Thao tác</th>
                                 </tr>
@@ -713,39 +720,67 @@ $navigationIcons = [
 
                             <tbody>
 
-                                <?php foreach ($mockComments as $comment): ?>
+                                <?php if ($ratingError !== '') : ?>
+                                    <tr>
+                                        <td colspan="8" class="muted">
+                                            Không thể tải đánh giá: <?php echo adminEscape($ratingError); ?>
+                                        </td>
+                                    </tr>
+                                <?php elseif ($ratings === []) : ?>
+                                    <tr>
+                                        <td colspan="8" class="muted">Chưa có đánh giá nào.</td>
+                                    </tr>
+                                <?php endif; ?>
+
+                                <?php foreach ($ratings as $rating): ?>
 
                                     <tr>
                                         <td>
                                             <strong>
-                                                <?php echo adminEscape($comment['user']); ?>
+                                                <?php echo adminEscape((string) ($rating['full_name'] ?: $rating['username'])); ?>
                                             </strong>
                                         </td>
 
                                         <td>
-                                            <?php echo adminEscape($comment['content']); ?>
-                                        </td>
-
-                                        <td class="muted">
-                                            <?php echo adminEscape($comment['article']); ?>
+                                            <?php echo adminEscape((string) $rating['comment']); ?>
                                         </td>
 
                                         <td>
-                                            <span
-                                                class="status <?php echo $comment['status'] === 'Hiển thị' ? 'on' : 'off'; ?>"
-                                            >
-                                                <?php echo $comment['status']; ?>
+                                            <span class="rating-stars">
+                                                <?php for ($star = 1; $star <= 5; $star++) : ?>
+                                                    <i class="fa-<?php echo $star <= (int) $rating['rating_value'] ? 'solid' : 'regular'; ?> fa-star"></i>
+                                                <?php endfor; ?>
                                             </span>
                                         </td>
 
+                                        <td class="muted">
+                                            #<?php echo (int) $rating['article_id']; ?>
+                                        </td>
+
                                         <td>
-                                            <a
-                                                class="action hide"
-                                                href="#"
-                                                title="Ẩn bình luận"
-                                            >
-                                                <i class="fa-solid fa-eye-slash"></i>
-                                            </a>
+                                            <?php echo adminEscape((string) $rating['article_title']); ?>
+                                        </td>
+
+                                        <td class="muted">
+                                            <?php echo adminEscape(adminArticleDate((string) $rating['created_at'])); ?>
+                                        </td>
+                                        <td>
+                                            <span class="status <?php echo (int) $rating['status'] === 1 ? 'on' : 'off'; ?>">
+                                                <?php echo (int) $rating['status'] === 1 ? 'Hiển thị' : 'Đang ẩn'; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <form method="post" class="rating-visibility-form">
+                                                <input type="hidden" name="rating_action" value="toggle">
+                                                <input type="hidden" name="rating_id" value="<?php echo (int) $rating['rating_id']; ?>">
+                                                <button
+                                                    type="submit"
+                                                    class="action <?php echo (int) $rating['status'] === 1 ? 'hide' : 'edit'; ?>"
+                                                    title="<?php echo (int) $rating['status'] === 1 ? 'Ẩn đánh giá' : 'Hiển thị đánh giá'; ?>"
+                                                >
+                                                    <i class="fa-solid fa-<?php echo (int) $rating['status'] === 1 ? 'eye-slash' : 'eye'; ?>"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
 
@@ -774,13 +809,16 @@ $navigationIcons = [
     (is_array($categoryActionResult) && $categoryActionResult['success'])
     || (is_array($articleActionResult) && $articleActionResult['success'])
     || (is_array($userActionResult) && $userActionResult['success'])
+    || (is_array($ratingActionResult) && $ratingActionResult['success'])
 ) : ?>
     <div class="update-success-modal" role="status" aria-live="polite">
         <div class="update-success-card">
             <div class="update-success-icon"><i class="fa-solid fa-circle-check"></i></div>
             <h2>
                 <?php
-                echo $userActionResult !== null
+                echo $ratingActionResult !== null
+                    ? 'Đã cập nhật trạng thái đánh giá'
+                    : ($userActionResult !== null
                     ? ($userAction === 'create'
                         ? 'Thêm thành công'
                         : ($userAction === 'lock' ? 'Khóa thành công' : 'Cập nhật thành công'))
@@ -790,11 +828,11 @@ $navigationIcons = [
                         : ($articleAction === 'delete' ? 'Xóa thành công' : 'Cập nhật thành công'))
                     : ($categoryAction === 'create'
                         ? 'Thêm thành công'
-                        : ($categoryAction === 'delete' ? 'Xóa thành công' : 'Cập nhật thành công')));
+                        : ($categoryAction === 'delete' ? 'Xóa thành công' : 'Cập nhật thành công'))));
                 ?>
             </h2>
             <p><?php echo adminEscape(
-                (string) (($userActionResult ?? $articleActionResult ?? $categoryActionResult)['message'] ?? '')
+                (string) (($ratingActionResult ?? $userActionResult ?? $articleActionResult ?? $categoryActionResult)['message'] ?? '')
             ); ?> Trang sẽ tải lại ngay.</p>
             <div class="update-progress"><span></span></div>
         </div>
@@ -804,6 +842,7 @@ $navigationIcons = [
     (is_array($categoryActionResult) && $categoryActionResult['success'])
     || (is_array($articleActionResult) && $articleActionResult['success'])
     || (is_array($userActionResult) && $userActionResult['success'])
+    || (is_array($ratingActionResult) && $ratingActionResult['success'])
 ) : ?>
 <script>
     window.setTimeout(function () {
