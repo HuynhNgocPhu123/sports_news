@@ -7,6 +7,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: #fff; color: var(--dark); font: 13px/1.5 Arial, sans-serif; }
+header { background: #fff; position: sticky; top: 0; z-index: 10; }
 a { color: inherit; text-decoration: none; }
 .container { width: min(1180px, calc(100% - 40px)); margin: auto; }
 .topbar { border-bottom: 1px solid var(--line); }
@@ -14,8 +15,10 @@ a { color: inherit; text-decoration: none; }
 .brand { align-items: center; display: flex; font-size: 21px; font-weight: 700; gap: 10px; }
 .brand-mark { align-items: center; border: 2px solid var(--green); border-radius: 50%; color: var(--green); display: flex; font-size: 15px; height: 30px; justify-content: center; width: 30px; }
 .top-actions { align-items: center; display: flex; gap: 20px; }
-.search { background: var(--soft); border: 1px solid #edf1f2; border-radius: 20px; color: #9aa5ab; padding: 8px 14px; width: 220px; }
-.search i { float: right; color: var(--dark); }
+.search { align-items: center; background: var(--soft); border: 1px solid #edf1f2; border-radius: 20px; display: flex; padding: 0 12px 0 14px; width: 220px; }
+.search input { background: transparent; border: 0; color: var(--dark); font: inherit; min-width: 0; outline: 0; padding: 8px 0; width: 100%; }
+.search input::placeholder { color: #9aa5ab; }
+.search button { background: transparent; border: 0; color: var(--dark); cursor: pointer; padding: 8px 0 8px 8px; }
 .login { font-size: 12px; font-weight: 700; }
 .signup { background: var(--green); border-radius: 18px; color: white; padding: 8px 17px; }
 .account-menu { align-items: center; display: flex; gap: 12px; }
@@ -51,6 +54,7 @@ h2::before { border-left: 3px solid var(--green); content: ''; margin-right: 9px
 .latest-item { border-bottom: 1px solid var(--line); display: flex; gap: 10px; padding: 8px 0; }
 .latest-item:last-child { border: 0; }
 .latest-item img { border-radius: 3px; height: 61px; object-fit: cover; width: 88px; }
+.article-image-link { display: block; }
 .article-category { color: var(--green); font-size: 10px; }
 .latest-item h3 { font-size: 12px; line-height: 1.3; margin: 2px 0 6px; }
 .latest-item h3 a, .featured-card h3 a { color: inherit; text-decoration: none; }

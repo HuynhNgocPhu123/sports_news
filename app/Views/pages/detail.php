@@ -5,6 +5,7 @@ declare(strict_types=1);
 $siteName = 'Football News';
 $categories = array();
 $categoryError = '';
+$articleError = '';
 
 try {
     require_once __DIR__ . '/../../Config/Database.php';
@@ -31,20 +32,33 @@ function detailEscape(string $value): string
 
 $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 $currentUser = $_SESSION['auth'] ?? null;
-$article = array(
-    'category' => 'Bóng đá',
-    'title' => 'Man Utd xác nhận kế hoạch chiêu mộ tiền đạo hàng đầu châu Âu',
-    'lead' => 'Manchester United đang lên kế hoạch chiêu mộ một tiền đạo đẳng cấp nhằm cải thiện hàng công trong kỳ chuyển nhượng mùa hè 2025.',
-    'author' => 'Minh Anh',
-    'date' => '12/08/2025 - 08:30',
-    'comments' => '24 bình luận',
-    'image' => 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=1200&q=85',
-);
-$relatedArticles = array(
-    array('title' => 'Ronaldo xác nhận tương lai, người hâm mộ có thể yên tâm', 'image' => 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=300&q=80'),
-    array('title' => 'Đội tuyển Việt Nam hội quân, hướng tới vòng loại Asian Cup 2027', 'image' => 'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=300&q=80'),
-    array('title' => 'Real Madrid thắng đậm ngày ra quân La Liga 2025/26', 'image' => 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=300&q=80'),
-);
+
+require_once __DIR__ . '/../../Controllers/ArticleController.php';
+$slug = trim((string) ($_GET['slug'] ?? ''));
+$article = null;
+$relatedArticles = array();
+
+try {
+    if ($slug !== '') {
+        $article = ArticleController::findPublishedBySlug($slug);
+    }
+    if ($article === null) {
+        $articleError = 'Không tìm thấy bài viết hoặc bài viết chưa được đăng.';
+    } else {
+        $relatedArticles = ArticleController::relatedPublished(
+            (int) $article['category_id'],
+            (int) $article['article_id']
+        );
+    }
+} catch (mysqli_sql_exception | RuntimeException $exception) {
+    $articleError = $exception->getMessage();
+}
+
+$articleTitle = is_array($article) ? (string) $article['title'] : 'Không tìm thấy bài viết';
+$articleCategory = is_array($article) ? (string) ($article['category_name'] ?? 'Chưa phân loại') : '';
+$articleDate = is_array($article) && !empty($article['published_at'])
+    ? date('d/m/Y H:i', strtotime((string) $article['published_at']))
+    : 'Chưa đăng';
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -53,7 +67,7 @@ $relatedArticles = array(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="<?php echo detailEscape($applicationPath . '/public/assets/css/detail.css'); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    <title><?php echo detailEscape($article['title']); ?> - <?php echo detailEscape($siteName); ?></title>
+    <title><?php echo detailEscape($articleTitle); ?> - <?php echo detailEscape($siteName); ?></title>
 </head>
 <body>
     <header>
@@ -90,25 +104,25 @@ $relatedArticles = array(
     </header>
 
     <main class="container">
-        <div class="breadcrumb"><a href="./">Trang chủ</a> <i class="fa-solid fa-chevron-right"></i> <?php echo detailEscape($article['category']); ?></div>
+        <div class="breadcrumb"><a href="./">Trang chủ</a> <i class="fa-solid fa-chevron-right"></i> <?php echo detailEscape($articleCategory); ?></div>
+        <?php if ($article === null) : ?>
+            <div class="database-error">
+                <?php echo detailEscape($articleError); ?>
+            </div>
+        <?php else : ?>
         <div class="detail-layout">
             <article class="article">
-                <div class="article-category"><?php echo detailEscape($article['category']); ?></div>
-                <h1><?php echo detailEscape($article['title']); ?></h1>
-                <p class="article-lead"><?php echo detailEscape($article['lead']); ?></p>
+                <div class="article-category"><?php echo detailEscape($articleCategory); ?></div>
+                <h1><?php echo detailEscape((string) $article['title']); ?></h1>
+                <p class="article-lead"><?php echo detailEscape((string) ($article['summary'] ?? '')); ?></p>
                 <div class="article-meta">
-                    <span><i class="fa-regular fa-user"></i> <?php echo detailEscape($article['author']); ?></span>
-                    <span><i class="fa-regular fa-calendar"></i> <?php echo detailEscape($article['date']); ?></span>
-                    <span><i class="fa-regular fa-comment"></i> <?php echo detailEscape($article['comments']); ?></span>
+                    <span><i class="fa-regular fa-user"></i> <?php echo detailEscape((string) ($article['author_name'] ?? 'Ẩn danh')); ?></span>
+                    <span><i class="fa-regular fa-calendar"></i> <?php echo detailEscape($articleDate); ?></span>
+                    <span><i class="fa-regular fa-eye"></i> <?php echo number_format((int) $article['views']); ?> lượt xem</span>
                 </div>
-                <img class="article-cover" src="<?php echo detailEscape($article['image']); ?>" alt="ảnh lỗi">
-                <p class="image-caption">Man Utd đang tích cực chuẩn bị cho kỳ chuyển nhượng mới.</p>
+                <img class="article-cover" src="<?php echo detailEscape((string) ($article['images'] ?? '')); ?>" alt="ảnh lỗi">
                 <div class="article-content">
-                    <p>Manchester United đang dành sự quan tâm đặc biệt cho một trong những tiền đạo trẻ nổi bật nhất châu Âu. Đội bóng nước Anh muốn sớm hoàn tất kế hoạch tăng cường hàng công trước mùa giải mới.</p>
-                    <p>Theo những thông tin mới nhất, ban lãnh đạo câu lạc bộ đã bắt đầu các cuộc đàm phán với đại diện của cầu thủ. Đây được xem là bước đi quan trọng trong kế hoạch xây dựng đội hình cạnh tranh ở mùa giải năm nay.</p>
-                    <h2>Mục tiêu nâng cấp hàng công</h2>
-                    <p>Hàng công là một trong những vị trí được ưu tiên cải thiện. Ban huấn luyện cần thêm một cầu thủ có tốc độ, khả năng dứt điểm và có thể thích nghi nhanh với môi trường bóng đá Anh.</p>
-                    <p>Người hâm mộ đang chờ đợi những diễn biến tiếp theo trong thương vụ này. Nếu mọi việc diễn ra thuận lợi, tân binh mới có thể sớm hội quân cùng các đồng đội.</p>
+                    <?php echo nl2br(detailEscape((string) $article['content'])); ?>
                 </div>
                 <div class="share-row">
                     <span>Chia sẻ bài viết:</span>
@@ -132,7 +146,7 @@ $relatedArticles = array(
                 </section>
                 <section class="comments">
                     <div class="comments-heading">
-                        <h2>Bình luận <span>(24)</span></h2>
+                        <h2>Bình luận <span>(0)</span></h2>
                         <select aria-label="Sắp xếp bình luận">
                             <option>Mới nhất</option>
                             <option>Nhiều lượt thích</option>
@@ -169,20 +183,22 @@ $relatedArticles = array(
             <aside class="sidebar">
                 <h2 class="sidebar-title">Bài viết liên quan</h2>
                 <?php foreach ($relatedArticles as $relatedArticle) : ?>
-                    <a class="related-list related-item" href="?page=detail">
-                        <img src="<?php echo detailEscape($relatedArticle['image']); ?>" alt="ảnh lỗi">
+                    <a class="related-list related-item" href="?page=detail&amp;slug=<?php echo rawurlencode((string) $relatedArticle['slug']); ?>">
+                        <img src="<?php echo detailEscape((string) ($relatedArticle['images'] ?? '')); ?>" alt="ảnh lỗi">
                         <h3><?php echo detailEscape($relatedArticle['title']); ?></h3>
                     </a>
                 <?php endforeach; ?>
                 <h2 class="sidebar-title">Đọc nhiều nhất</h2>
-                <article class="sidebar-card">
-                    <img src="<?php echo detailEscape($relatedArticles[0]['image']); ?>" alt="ảnh lỗi">
-                    <div class="sidebar-body">
-                        <div class="article-category">Chuyển nhượng</div>
-                        <h3>Những thương vụ đáng chú ý trong mùa hè năm nay</h3>
-                        <div class="meta"><i class="fa-regular fa-eye"></i> 12.458 lượt xem</div>
-                    </div>
-                </article>
+                <?php if (isset($relatedArticles[0])) : ?>
+                    <article class="sidebar-card">
+                        <img src="<?php echo detailEscape((string) ($relatedArticles[0]['images'] ?? '')); ?>" alt="ảnh lỗi">
+                        <div class="sidebar-body">
+                            <div class="article-category"><?php echo detailEscape((string) ($relatedArticles[0]['category_name'] ?? '')); ?></div>
+                            <h3><?php echo detailEscape((string) ($relatedArticles[0]['title'] ?? '')); ?></h3>
+                            <div class="meta"><i class="fa-regular fa-eye"></i> <?php echo number_format((int) ($relatedArticles[0]['views'] ?? 0)); ?> lượt xem</div>
+                        </div>
+                    </article>
+                <?php endif; ?>
                 <h2 class="sidebar-title">Theo dõi chúng tôi</h2>
                 <div class="social-card">
                     <a href="#"><i class="fa-brands fa-facebook-f"></i><span>Facebook</span><small>12K người theo dõi</small></a>
@@ -200,6 +216,7 @@ $relatedArticles = array(
                 </div>
             </aside>
         </div>
+        <?php endif; ?>
         <?php if ($categoryError !== '') : ?>
             <p class="database-error">Không thể tải danh mục: <?php echo detailEscape($categoryError); ?></p>
         <?php endif; ?>

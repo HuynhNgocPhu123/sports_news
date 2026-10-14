@@ -332,6 +332,106 @@ final class ArticleController
         }
     }
 
+    public static function searchPublished(string $keyword): array
+    {
+        require_once __DIR__ . '/../Config/Database.php';
+        $mysqli = Database::connect();
+        $searchTerm = '%' . $keyword . '%';
+
+        try {
+            $statement = $mysqli->prepare(
+                'SELECT articles.article_id, articles.category_id, articles.title,
+                        articles.slug, articles.summary, articles.content,
+                        articles.status, articles.views, articles.published_at,
+                        articles.created_at, articles.images, categories.category_name
+                 FROM articles
+                 LEFT JOIN categories ON categories.category_id = articles.category_id
+                 WHERE articles.status = \'published\'
+                   AND (
+                       articles.title LIKE ?
+                       OR articles.summary LIKE ?
+                       OR articles.content LIKE ?
+                       OR categories.category_name LIKE ?
+                   )
+                 ORDER BY COALESCE(articles.published_at, articles.created_at) DESC,
+                          articles.article_id DESC'
+            );
+            $statement->bind_param(
+                'ssss',
+                $searchTerm,
+                $searchTerm,
+                $searchTerm,
+                $searchTerm
+            );
+            $statement->execute();
+            $articles = $statement->get_result()->fetch_all(MYSQLI_ASSOC);
+            $statement->close();
+
+            return $articles;
+        } finally {
+            $mysqli->close();
+        }
+    }
+
+    public static function findPublishedBySlug(string $slug): ?array
+    {
+        require_once __DIR__ . '/../Config/Database.php';
+        $mysqli = Database::connect();
+
+        try {
+            $statement = $mysqli->prepare(
+                'SELECT articles.article_id, articles.category_id, articles.title,
+                        articles.slug, articles.summary, articles.content,
+                        articles.status, articles.views, articles.published_at,
+                        articles.created_at, articles.images,
+                        categories.category_name, categories.slug AS category_slug,
+                        users.full_name AS author_name
+                 FROM articles
+                 LEFT JOIN categories ON categories.category_id = articles.category_id
+                 LEFT JOIN users ON users.user_id = articles.author_id
+                 WHERE articles.slug = ? AND articles.status = \'published\'
+                 LIMIT 1'
+            );
+            $statement->bind_param('s', $slug);
+            $statement->execute();
+            $article = $statement->get_result()->fetch_assoc();
+            $statement->close();
+
+            return is_array($article) ? $article : null;
+        } finally {
+            $mysqli->close();
+        }
+    }
+
+    public static function relatedPublished(int $categoryId, int $articleId, int $limit = 3): array
+    {
+        require_once __DIR__ . '/../Config/Database.php';
+        $mysqli = Database::connect();
+        $limit = max(1, min($limit, 10));
+
+        try {
+            $statement = $mysqli->prepare(
+                'SELECT articles.article_id, articles.title, articles.slug,
+                        articles.images, articles.views, categories.category_name
+                 FROM articles
+                 LEFT JOIN categories ON categories.category_id = articles.category_id
+                 WHERE articles.category_id = ? AND articles.article_id <> ?
+                   AND articles.status = \'published\'
+                 ORDER BY COALESCE(articles.published_at, articles.created_at) DESC,
+                          articles.article_id DESC
+                 LIMIT ?'
+            );
+            $statement->bind_param('iii', $categoryId, $articleId, $limit);
+            $statement->execute();
+            $related = $statement->get_result()->fetch_all(MYSQLI_ASSOC);
+            $statement->close();
+
+            return $related;
+        } finally {
+            $mysqli->close();
+        }
+    }
+
     private static function storeArticleImage(array $imageFile, int $articleId): string
     {
             $error = (int) ($imageFile['error'] ?? UPLOAD_ERR_NO_FILE);

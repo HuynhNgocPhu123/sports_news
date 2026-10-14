@@ -10,6 +10,7 @@ $articles = array();
 $articleError = '';
 $selectedCategorySlug = trim((string) ($_GET['category'] ?? ''));
 $selectedCategoryName = '';
+$searchKeyword = trim((string) ($_GET['search'] ?? ''));
 
 try {
     require_once __DIR__ . '/../../Config/Database.php';
@@ -32,7 +33,9 @@ try {
 }
 
 try {
-    $articles = ArticleController::published($selectedCategorySlug);
+    $articles = $searchKeyword !== ''
+        ? ArticleController::searchPublished($searchKeyword)
+        : ArticleController::published($selectedCategorySlug);
 } catch (mysqli_sql_exception | RuntimeException $exception) {
     $articleError = $exception->getMessage();
 }
@@ -79,7 +82,18 @@ $currentUser = $_SESSION['auth'] ?? null;
             <div class="container topbar-inner">
                 <a class="brand" href="/sport_news/"><span class="brand-mark"><i class="fa-solid fa-futbol"></i></span><?php echo e($siteName); ?></a>
                 <div class="top-actions">
-                    <div class="search">Tìm kiếm tin tức... <i class="fa-solid fa-magnifying-glass"></i></div>
+                    <form class="search" action="./" method="get">
+                        <input
+                            type="search"
+                            name="search"
+                            value="<?php echo e($searchKeyword); ?>"
+                            placeholder="Tìm kiếm tin tức..."
+                            aria-label="Tìm kiếm tin tức"
+                        >
+                        <button type="submit" aria-label="Tìm kiếm">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </form>
                     <?php if (is_array($currentUser)) : ?>
                         <div class="account-menu">
                             <span class="account-name"><i class="fa-regular fa-user"></i> <?php echo e((string) $currentUser['full_name']); ?></span>
@@ -113,9 +127,32 @@ $currentUser = $_SESSION['auth'] ?? null;
             </div>
         </nav>
     </header>
+    <script>
+        (function () {
+            var searchInput = document.querySelector('.search input[name="search"]');
+            if (!searchInput) {
+                return;
+            }
+
+            searchInput.addEventListener('input', function () {
+                if (this.value.trim() !== '' || !new URLSearchParams(window.location.search).has('search')) {
+                    return;
+                }
+
+                var url = new URL(window.location.href);
+                url.searchParams.delete('search');
+                window.location.replace(url.toString());
+            });
+        }());
+    </script>
 
     <main class="container">
-        <?php if ($selectedCategoryName !== '') : ?>
+        <?php if ($searchKeyword !== '') : ?>
+            <div class="category-page-heading">
+                <h1>Kết quả tìm kiếm</h1>
+                <p>Từ khóa: <strong><?php echo e($searchKeyword); ?></strong></p>
+            </div>
+        <?php elseif ($selectedCategoryName !== '') : ?>
             <div class="category-page-heading">
                 <h1><?php echo e($selectedCategoryName); ?></h1>
                 <p>Các bài viết mới nhất thuộc danh mục này</p>
@@ -124,7 +161,9 @@ $currentUser = $_SESSION['auth'] ?? null;
         <section class="top-grid">
             <article class="hero">
                 <?php if ($heroArticle !== null) : ?>
-                    <img class="hero-image" src="<?php echo e((string) ($heroArticle['images'] ?? '')); ?>" alt="ảnh lỗi">
+                    <a class="article-image-link" href="?page=detail&amp;slug=<?php echo rawurlencode((string) $heroArticle['slug']); ?>">
+                        <img class="hero-image" src="<?php echo e((string) ($heroArticle['images'] ?? '')); ?>" alt="ảnh lỗi">
+                    </a>
                     <div class="hero-content">
                         <span class="tag"><?php echo e((string) ($heroArticle['category_name'] ?? 'Chưa phân loại')); ?></span>
                         <h1><a href="?page=detail&amp;slug=<?php echo rawurlencode((string) $heroArticle['slug']); ?>"><?php echo e((string) $heroArticle['title']); ?></a></h1>
@@ -145,7 +184,9 @@ $currentUser = $_SESSION['auth'] ?? null;
                 <div class="latest-list">
                     <?php foreach ($latestArticles as $article) : ?>
                         <article class="latest-item">
-                            <img src="<?php echo e((string) ($article['images'] ?? '')); ?>" alt="ảnh lỗi">
+                            <a class="article-image-link" href="?page=detail&amp;slug=<?php echo rawurlencode((string) $article['slug']); ?>">
+                                <img src="<?php echo e((string) ($article['images'] ?? '')); ?>" alt="ảnh lỗi">
+                            </a>
                             <div>
                                 <div class="article-category"><?php echo e((string) ($article['category_name'] ?? 'Chưa phân loại')); ?></div>
                                 <h3><a href="?page=detail&amp;slug=<?php echo rawurlencode((string) $article['slug']); ?>"><?php echo e((string) $article['title']); ?></a></h3>
@@ -165,7 +206,9 @@ $currentUser = $_SESSION['auth'] ?? null;
             <div class="featured-grid">
                 <?php foreach ($featuredArticles as $article) : ?>
                     <article class="featured-card">
-                        <img src="<?php echo e((string) ($article['images'] ?? '')); ?>" alt="ảnh lỗi">
+                        <a class="article-image-link" href="?page=detail&amp;slug=<?php echo rawurlencode((string) $article['slug']); ?>">
+                            <img src="<?php echo e((string) ($article['images'] ?? '')); ?>" alt="ảnh lỗi">
+                        </a>
                         <div class="card-body">
                             <div class="article-category"><?php echo e((string) ($article['category_name'] ?? 'Chưa phân loại')); ?></div>
                             <h3><a href="?page=detail&amp;slug=<?php echo rawurlencode((string) $article['slug']); ?>"><?php echo e((string) $article['title']); ?></a></h3>
