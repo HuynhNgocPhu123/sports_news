@@ -292,26 +292,39 @@ final class ArticleController
         }
     }
 
-    public static function published(): array
+    public static function published(?string $categorySlug = null): array
     {
         require_once __DIR__ . '/../Config/Database.php';
         $mysqli = Database::connect();
 
         try {
-            $result = $mysqli->query(
-                'SELECT articles.article_id, articles.category_id, articles.title,
-                        articles.slug, articles.summary, articles.content,
-                        articles.status, articles.views, articles.published_at,
-                        articles.created_at, articles.images, categories.category_name
-                 FROM articles
-                 LEFT JOIN categories ON categories.category_id = articles.category_id
-                 WHERE articles.status = \'published\'
-                 ORDER BY COALESCE(articles.published_at, articles.created_at) DESC,
-                          articles.article_id DESC'
-            );
+            $query = 'SELECT articles.article_id, articles.category_id, articles.title,
+                             articles.slug, articles.summary, articles.content,
+                             articles.status, articles.views, articles.published_at,
+                             articles.created_at, articles.images, categories.category_name
+                      FROM articles
+                      LEFT JOIN categories ON categories.category_id = articles.category_id
+                      WHERE articles.status = \'published\'';
+
+            if ($categorySlug !== null && $categorySlug !== '') {
+                $query .= ' AND categories.slug = ?';
+                $query .= ' ORDER BY COALESCE(articles.published_at, articles.created_at) DESC,
+                                   articles.article_id DESC';
+                $statement = $mysqli->prepare($query);
+                $statement->bind_param('s', $categorySlug);
+                $statement->execute();
+                $result = $statement->get_result();
+            } else {
+                $query .= ' ORDER BY COALESCE(articles.published_at, articles.created_at) DESC,
+                                   articles.article_id DESC';
+                $result = $mysqli->query($query);
+            }
 
             $articles = $result->fetch_all(MYSQLI_ASSOC);
             $result->free();
+            if (isset($statement)) {
+                $statement->close();
+            }
 
             return $articles;
         } finally {

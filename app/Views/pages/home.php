@@ -8,6 +8,8 @@ $categories = array();
 $categoryError = '';
 $articles = array();
 $articleError = '';
+$selectedCategorySlug = trim((string) ($_GET['category'] ?? ''));
+$selectedCategoryName = '';
 
 try {
     require_once __DIR__ . '/../../Config/Database.php';
@@ -30,9 +32,16 @@ try {
 }
 
 try {
-    $articles = ArticleController::published();
+    $articles = ArticleController::published($selectedCategorySlug);
 } catch (mysqli_sql_exception | RuntimeException $exception) {
     $articleError = $exception->getMessage();
+}
+
+foreach ($categories as $category) {
+    if ((string) $category['slug'] === $selectedCategorySlug) {
+        $selectedCategoryName = (string) $category['category_name'];
+        break;
+    }
 }
 
 function e(string $value): string
@@ -89,10 +98,13 @@ $currentUser = $_SESSION['auth'] ?? null;
         <nav class="nav">
             <div class="container">
                 <ul class="nav-list">
-                    <li><a class="active" href="./">Trang chủ</a></li>
+                    <li><a class="<?php echo $selectedCategorySlug === '' ? 'active' : ''; ?>" href="./">Trang chủ</a></li>
                     <?php foreach ($categories as $category) : ?>
                         <li>
-                            <a href="?category=<?php echo rawurlencode((string) $category['slug']); ?>">
+                            <a
+                                class="<?php echo (string) $category['slug'] === $selectedCategorySlug ? 'active' : ''; ?>"
+                                href="?category=<?php echo rawurlencode((string) $category['slug']); ?>"
+                            >
                                 <?php echo e((string) $category['category_name']); ?>
                             </a>
                         </li>
@@ -103,6 +115,12 @@ $currentUser = $_SESSION['auth'] ?? null;
     </header>
 
     <main class="container">
+        <?php if ($selectedCategoryName !== '') : ?>
+            <div class="category-page-heading">
+                <h1><?php echo e($selectedCategoryName); ?></h1>
+                <p>Các bài viết mới nhất thuộc danh mục này</p>
+            </div>
+        <?php endif; ?>
         <section class="top-grid">
             <article class="hero">
                 <?php if ($heroArticle !== null) : ?>
@@ -138,6 +156,9 @@ $currentUser = $_SESSION['auth'] ?? null;
                 </div>
             </aside>
         </section>
+        <?php if ($selectedCategoryName !== '' && $heroArticle === null) : ?>
+            <p class="database-error">Danh mục này chưa có bài viết đã đăng.</p>
+        <?php endif; ?>
 
         <section>
             <div class="section-title"><h2>Tin nổi bật</h2><a class="view-all" href="#">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
@@ -162,7 +183,7 @@ $currentUser = $_SESSION['auth'] ?? null;
             <div class="section-title"><h2>Danh mục tin tức</h2><a class="view-all" href="#">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
             <div class="category-grid">
                 <?php foreach ($categories as $category) : ?>
-                    <a class="category" href="#">
+                    <a class="category" href="?category=<?php echo rawurlencode((string) $category['slug']); ?>">
                         <img class="category-image" src="<?php echo e((string) $category['images']); ?>" alt="ảnh lỗi">
                         <span class="category-content">
                             <strong><?php echo e($category['category_name']); ?></strong>

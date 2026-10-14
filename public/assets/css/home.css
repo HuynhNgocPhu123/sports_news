@@ -75,6 +75,9 @@ h2::before { border-left: 3px solid var(--green); content: ''; margin-right: 9px
 footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; padding: 18px 0; }
 .footer-inner { align-items: center; display: flex; justify-content: space-between; }
 .database-error { color: #b91c1c; }
+.category-page-heading { border-bottom: 1px solid var(--line); margin: 10px 0 14px; padding-bottom: 10px; }
+.category-page-heading h1 { font-size: 22px; margin: 0 0 4px; }
+.category-page-heading p { color: var(--muted); font-size: 12px; margin: 0; }
 @media (max-width: 850px) {
     .top-grid { grid-template-columns: 1fr; }
     .featured-grid { grid-template-columns: repeat(2, 1fr); }
