@@ -4,6 +4,27 @@ declare(strict_types=1);
 
 final class CategoryController
 {
+    public static function all(): array
+    {
+        require_once __DIR__ . '/../Config/Database.php';
+        $mysqli = Database::connect();
+
+        try {
+            $result = $mysqli->query(
+                'SELECT category_id, category_name, slug, images, description, created_at
+                 FROM categories
+                 ORDER BY category_id ASC'
+            );
+
+            $categories = $result->fetch_all(MYSQLI_ASSOC);
+            $result->free();
+
+            return $categories;
+        } finally {
+            $mysqli->close();
+        }
+    }
+
     public static function create(array $input, ?array $imageFile = null): array
     {
         $categoryName = trim((string) ($input['category_name'] ?? ''));

@@ -19,8 +19,11 @@ $articles = [];
 $articleError = '';
 $categoryActionResult = null;
 
+require_once __DIR__ . '/../../Controllers/CategoryController.php';
+require_once __DIR__ . '/../../Controllers/ArticleController.php';
+require_once __DIR__ . '/../../Controllers/UserController.php';
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['category_action'] ?? '') !== '') {
-    require_once __DIR__ . '/../../Controllers/CategoryController.php';
     $categoryAction = (string) $_POST['category_action'];
     if ($categoryAction === 'create') {
         $categoryActionResult = CategoryController::create($_POST, $_FILES['images'] ?? null);
@@ -32,54 +35,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['category_action
 }
 
 try {
-    require_once __DIR__ . '/../../Config/Database.php';
-
-    $mysqli = Database::connect();
-
-    $result = $mysqli->query(
-        'SELECT category_id, category_name, slug, images, description, created_at
-         FROM categories
-         ORDER BY category_id ASC'
-    );
-
-    $categories = $result->fetch_all(MYSQLI_ASSOC);
-
-    $result->free();
-    $mysqli->close();
+    $categories = CategoryController::all();
 } catch (mysqli_sql_exception | RuntimeException $exception) {
     $categoryError = $exception->getMessage();
 }
 
 try {
-    $mysqli = Database::connect();
-    $userResult = $mysqli->query(
-        'SELECT users.user_id, users.username, users.email, users.full_name,
-                users.status, users.created_at, roles.role_name
-         FROM users
-         INNER JOIN roles ON roles.role_id = users.role_id
-         ORDER BY users.user_id ASC'
-    );
-    $users = $userResult->fetch_all(MYSQLI_ASSOC);
-    $userResult->free();
-    $mysqli->close();
+    $users = UserController::all();
 } catch (mysqli_sql_exception | RuntimeException $exception) {
     $userError = $exception->getMessage();
 }
 
 try {
-    $mysqli = Database::connect();
-    $articleResult = $mysqli->query(
-        'SELECT articles.article_id, articles.category_id, articles.title,
-                articles.slug, articles.status, articles.views,
-                articles.published_at, articles.created_at, articles.images,
-                categories.category_name
-         FROM articles
-         LEFT JOIN categories ON categories.category_id = articles.category_id
-         ORDER BY articles.created_at DESC, articles.article_id DESC'
-    );
-    $articles = $articleResult->fetch_all(MYSQLI_ASSOC);
-    $articleResult->free();
-    $mysqli->close();
+    $articles = ArticleController::all();
 } catch (mysqli_sql_exception | RuntimeException $exception) {
     $articleError = $exception->getMessage();
 }
@@ -410,262 +378,10 @@ $navigationIcons = [
                 </div>
 
             <?php elseif ($section === 'articles'): ?>
-
-                <div class="section-heading">
-
-                    <div>
-                        <h2>Danh sách bài viết</h2>
-                        <p>Thêm, sửa, đăng/ẩn và xóa bài viết</p>
-                    </div>
-
-                    <button class="button" type="button">
-                        <i class="fa-solid fa-plus"></i>
-                        Thêm bài viết
-                    </button>
-
-                </div>
-
-                <div class="panel">
-                    <?php if ($articleError !== ''): ?>
-                        <p class="admin-alert error">
-                            Không thể tải bài viết: <?php echo adminEscape($articleError); ?>
-                        </p>
-                    <?php endif; ?>
-
-                    <div class="table-wrap">
-
-                        <table class="data-table">
-
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Hình ảnh</th>
-                                    <th>Tiêu đề</th>
-                                    <th>Danh mục</th>
-                                    <th>Ngày đăng</th>
-                                    <th>Lượt xem</th>
-                                    <th>Trạng thái</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-
-                                <?php foreach ($articles as $article): ?>
-
-                                    <tr>
-                                        <td class="muted">
-                                            #<?php echo (int) $article['article_id']; ?>
-                                        </td>
-                                        
-                                        <td>
-                                            <img src="<?php echo adminEscape($article['images'] ?? ''); ?>" alt="Hình ảnh" width="100" height="100">
-                                        </td>
-
-                                        <td>
-                                            <strong>
-                                                <?php echo adminEscape($article['title']); ?>
-                                            </strong>
-                                        </td>
-
-                                        <td>
-                                            <?php echo adminEscape((string) ($article['category_name'] ?? 'Chưa phân loại')); ?>
-                                        </td>
-
-                                        <td class="muted">
-                                            <?php echo adminEscape(adminArticleDate($article['published_at'] ?? null)); ?>
-                                        </td>
-
-                                        <td>
-                                            <?php echo number_format((int) $article['views']); ?>
-                                        </td>
-
-                                        <td>
-                                            <span
-                                                class="status <?php echo $article['status'] === 'published' ? 'on' : 'off'; ?>"
-                                            >
-                                                <?php echo $article['status'] === 'published'
-                                                    ? 'Đã đăng'
-                                                    : ($article['status'] === 'hidden' ? 'Đang ẩn' : 'Bản nháp'); ?>
-                                            </span>
-                                        </td>
-
-                                        <td>
-                                            <div class="actions">
-
-                                                <a
-                                                    class="action edit"
-                                                    href="#"
-                                                    title="Sửa"
-                                                >
-                                                    <i class="fa-solid fa-pen"></i>
-                                                </a>
-
-                                                <a
-                                                    class="action"
-                                                    href="#"
-                                                    title="Đăng/ẩn"
-                                                >
-                                                    <i class="fa-solid fa-eye"></i>
-                                                </a>
-
-                                                <a
-                                                    class="action delete"
-                                                    href="#"
-                                                    title="Xóa"
-                                                >
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </a>
-
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                <?php endforeach; ?>
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
+                <?php include __DIR__ . '/../admin/articles.php'; ?>
 
             <?php elseif ($section === 'categories'): ?>
-
-                <div class="section-heading">
-
-                    <div>
-                        <h2>Danh sách chuyên mục</h2>
-                        <p>Dữ liệu đang được tải trực tiếp từ database</p>
-                    </div>
-
-                    <button class="button" type="button" onclick="openCreateCategoryModal();">
-                        <i class="fa-solid fa-plus"></i>
-                        Thêm chuyên mục
-                    </button>
-
-                </div>
-
-                <?php if ($categoryError !== ''): ?>
-
-                    <p class="muted">
-                        Không thể tải danh mục:
-                        <?php echo adminEscape($categoryError); ?>
-                    </p>
-
-                <?php endif; ?>
-
-                <div class="panel">
-
-                    <div class="table-wrap">
-
-                        <table class="data-table">
-
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Chuyên mục</th>
-                                    <th>Hình ảnh</th>
-                                    <th>Slug</th>
-                                    <th>Mô tả</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-
-                                <?php foreach ($categories as $category): ?>
-
-                                    <tr>
-                                        <td>
-                                            <?php
-                                            echo adminEscape(
-                                                (string) $category['category_id']
-                                            );
-                                            ?>
-                                        </td>
-
-                                        <td>
-                                            <strong>
-                                                <?php
-                                                echo adminEscape(
-                                                    (string) $category['category_name']
-                                                );
-                                                ?>
-                                            </strong>
-                                        </td>
-
-                                        <td>
-                                            <img src="<?php echo adminEscape((string) $category['images']); ?>" alt="<?php echo adminEscape((string) $category['category_name']); ?>" width="100" height="100">
-                                        </td>
-
-                                        <td class="muted">
-                                            <?php
-                                            echo adminEscape(
-                                                (string) $category['slug']
-                                            );
-                                            ?>
-                                        </td>
-
-                                        <td>
-                                            <span class="category-description">
-                                                <?php
-                                                echo adminEscape(
-                                                    (string) $category['description']
-                                                );
-                                                ?>
-                                            </span>
-                                        </td>
-
-                                        <td>
-                                            <div class="actions">
-
-                                                <a
-                                                    class="action edit"
-                                                    href="#"
-                                                    title="Sửa"
-                                                    data-category-id="<?php echo adminEscape((string) $category['category_id']); ?>"
-                                                    data-category-name="<?php echo adminEscape((string) $category['category_name']); ?>"
-                                                    data-category-slug="<?php echo adminEscape((string) $category['slug']); ?>"
-                                                    data-category-images="<?php echo adminEscape((string) $category['images']); ?>"
-                                                    data-category-description="<?php echo adminEscape((string) $category['description']); ?>"
-                                                    onclick="openCategoryModal(event, this);"
-                                                >
-                                                    <i class="fa-solid fa-pen"></i>
-                                                </a>
-
-                                                <a
-                                                    class="action delete"
-                                                    href="#"
-                                                    title="Xóa"
-                                                    data-category-id="<?php echo adminEscape((string) $category['category_id']); ?>"
-                                                    data-category-name="<?php echo adminEscape((string) $category['category_name']); ?>"
-                                                    onclick="openDeleteCategoryModal(event, this);"
-                                                >
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </a>
-
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                <?php endforeach; ?>
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
-                <?php if (is_array($categoryActionResult) && !$categoryActionResult['success']) : ?>
-                    <div class="admin-alert error">
-                        <i class="fa-solid fa-circle-exclamation"></i>
-                        <?php echo adminEscape($categoryActionResult['message']); ?>
-                    </div>
-                <?php endif; ?>
+                <?php include __DIR__ . '/../admin/categories.php'; ?>
 
             <?php elseif ($section === 'users'): ?>
 
@@ -877,137 +593,6 @@ $navigationIcons = [
         </div>
     </div>
 <?php endif; ?>
-<div class="modal-backdrop" id="category-create-modal" aria-hidden="true">
-    <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="category-create-modal-title">
-        <button class="modal-close" type="button" aria-label="Đóng" onclick="closeCreateCategoryModal();">&times;</button>
-        <h2 id="category-create-modal-title">Thêm chuyên mục</h2>
-        <p>Nhập thông tin chuyên mục mới và lưu trực tiếp vào database.</p>
-        <form method="post" action="?page=admin&amp;section=categories" enctype="multipart/form-data">
-            <input type="hidden" name="category_action" value="create">
-            <label for="new-category-name">Tên chuyên mục</label>
-            <input type="text" name="category_name" id="new-category-name" maxlength="100" required>
-            <label for="new-category-slug">Slug</label>
-            <input type="text" name="slug" id="new-category-slug" maxlength="100" required>
-            <label for="new-category-images">Chọn hình ảnh</label>
-            <input type="file" name="images" id="new-category-images">
-            <span class="file-note">Ảnh JPG, PNG, GIF hoặc WEBP, tối đa 5MB. Hệ thống kiểm tra theo nội dung ảnh.</span>
-            <label for="new-category-description">Mô tả</label>
-            <textarea name="description" id="new-category-description" maxlength="255" rows="3"></textarea>
-            <div class="modal-actions">
-                <button class="button light" type="button" onclick="closeCreateCategoryModal();">Hủy</button>
-                <button class="button" type="submit"><i class="fa-solid fa-plus"></i>Thêm chuyên mục</button>
-            </div>
-        </form>
-    </section>
-</div>
-<div class="modal-backdrop" id="category-delete-modal" aria-hidden="true">
-    <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="category-delete-modal-title">
-        <button class="modal-close" type="button" aria-label="Đóng" onclick="closeDeleteCategoryModal();">&times;</button>
-        <h2 id="category-delete-modal-title">Xóa chuyên mục?</h2>
-        <p>
-            Bạn có chắc chắn muốn xóa chuyên mục
-            <strong id="delete-category-name"></strong> không?
-            Dữ liệu sẽ bị xóa khỏi database và không thể khôi phục.
-        </p>
-        <form method="post" action="?page=admin&amp;section=categories">
-            <input type="hidden" name="category_action" value="delete">
-            <input type="hidden" name="category_id" id="delete-category-id">
-            <div class="modal-actions">
-                <button class="button light" type="button" onclick="closeDeleteCategoryModal();">Hủy</button>
-                <button class="button delete-confirm" type="submit">
-                    <i class="fa-solid fa-trash"></i>
-                    Xóa chuyên mục
-                </button>
-            </div>
-        </form>
-    </section>
-</div>
-<div class="modal-backdrop" id="category-modal" aria-hidden="true">
-    <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="category-modal-title">
-        <button class="modal-close" type="button" aria-label="Đóng" onclick="closeCategoryModal();">&times;</button>
-        <h2 id="category-modal-title">Chỉnh sửa chuyên mục</h2>
-        <p>Cập nhật thông tin chuyên mục và lưu trực tiếp vào database.</p>
-        <form method="post" action="?page=admin&amp;section=categories" enctype="multipart/form-data">
-            <input type="hidden" name="category_action" value="update">
-            <input type="hidden" name="category_id" id="category-id">
-            <label for="category-name">Tên chuyên mục</label>
-            <input type="text" name="category_name" id="category-name" maxlength="100" required>
-            <label for="category-slug">Slug</label>
-            <input type="text" name="slug" id="category-slug" maxlength="100" required>
-            <input type="hidden" name="current_images" id="category-current-images">
-            <label for="category-images">Chọn hình ảnh</label>
-            <input type="file" name="images" id="category-images">
-            <span class="file-note" id="category-image-note">Nếu không chọn ảnh mới, ảnh hiện tại sẽ được giữ lại. Hệ thống kiểm tra theo nội dung ảnh.</span>
-            <label for="category-description">Mô tả</label>
-            <textarea name="description" id="category-description" maxlength="255" rows="3"></textarea>
-            <div class="modal-actions">
-                <button class="button light" type="button" onclick="closeCategoryModal();">Hủy</button>
-                <button class="button" type="submit"><i class="fa-solid fa-floppy-disk"></i>Lưu thay đổi</button>
-            </div>
-        </form>
-    </section>
-</div>
-<script>
-    function openCategoryModal(event, trigger) {
-        event.preventDefault();
-        document.getElementById('category-id').value = trigger.dataset.categoryId;
-        document.getElementById('category-name').value = trigger.dataset.categoryName;
-        document.getElementById('category-slug').value = trigger.dataset.categorySlug;
-        document.getElementById('category-current-images').value = trigger.dataset.categoryImages;
-        document.getElementById('category-image-note').textContent = trigger.dataset.categoryImages
-            ? 'Ảnh hiện tại: ' + trigger.dataset.categoryImages
-            : 'Chưa có ảnh. Bạn có thể chọn JPG, PNG, GIF hoặc WEBP (tối đa 5MB).';
-        document.getElementById('category-description').value = trigger.dataset.categoryDescription;
-        document.getElementById('category-modal').classList.add('open');
-        document.getElementById('category-modal').setAttribute('aria-hidden', 'false');
-    }
-
-    function closeCategoryModal() {
-        document.getElementById('category-modal').classList.remove('open');
-        document.getElementById('category-modal').setAttribute('aria-hidden', 'true');
-    }
-
-    function openCreateCategoryModal() {
-        document.getElementById('category-create-modal').classList.add('open');
-        document.getElementById('category-create-modal').setAttribute('aria-hidden', 'false');
-    }
-
-    function closeCreateCategoryModal() {
-        document.getElementById('category-create-modal').classList.remove('open');
-        document.getElementById('category-create-modal').setAttribute('aria-hidden', 'true');
-    }
-
-    function openDeleteCategoryModal(event, trigger) {
-        event.preventDefault();
-        document.getElementById('delete-category-id').value = trigger.dataset.categoryId;
-        document.getElementById('delete-category-name').textContent = trigger.dataset.categoryName;
-        document.getElementById('category-delete-modal').classList.add('open');
-        document.getElementById('category-delete-modal').setAttribute('aria-hidden', 'false');
-    }
-
-    function closeDeleteCategoryModal() {
-        document.getElementById('category-delete-modal').classList.remove('open');
-        document.getElementById('category-delete-modal').setAttribute('aria-hidden', 'true');
-    }
-
-    document.getElementById('category-modal').addEventListener('click', function (event) {
-        if (event.target === this) {
-            closeCategoryModal();
-        }
-    });
-
-    document.getElementById('category-create-modal').addEventListener('click', function (event) {
-        if (event.target === this) {
-            closeCreateCategoryModal();
-        }
-    });
-
-    document.getElementById('category-delete-modal').addEventListener('click', function (event) {
-        if (event.target === this) {
-            closeDeleteCategoryModal();
-        }
-    });
-</script>
 <?php if (is_array($categoryActionResult) && $categoryActionResult['success']) : ?>
 <script>
     window.setTimeout(function () {
