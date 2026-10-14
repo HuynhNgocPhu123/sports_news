@@ -15,6 +15,8 @@ $categories = [];
 $categoryError = '';
 $users = [];
 $userError = '';
+$articles = [];
+$articleError = '';
 $categoryActionResult = null;
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['category_action'] ?? '') !== '') {
@@ -64,9 +66,38 @@ try {
     $userError = $exception->getMessage();
 }
 
+try {
+    $mysqli = Database::connect();
+    $articleResult = $mysqli->query(
+        'SELECT articles.article_id, articles.category_id, articles.title,
+                articles.slug, articles.status, articles.views,
+                articles.published_at, articles.created_at, articles.images,
+                categories.category_name
+         FROM articles
+         LEFT JOIN categories ON categories.category_id = articles.category_id
+         ORDER BY articles.created_at DESC, articles.article_id DESC'
+    );
+    $articles = $articleResult->fetch_all(MYSQLI_ASSOC);
+    $articleResult->free();
+    $mysqli->close();
+} catch (mysqli_sql_exception | RuntimeException $exception) {
+    $articleError = $exception->getMessage();
+}
+
 function adminEscape(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function adminArticleDate(?string $date): string
+{
+    if ($date === null || $date === '') {
+        return 'Chưa đăng';
+    }
+
+    $timestamp = strtotime($date);
+
+    return $timestamp === false ? 'Chưa đăng' : date('d/m/Y H:i', $timestamp);
 }
 
 $section = $_GET['section'] ?? 'dashboard';
@@ -89,27 +120,6 @@ $applicationPath = rtrim(
     ),
     '/'
 );
-
-$mockArticles = [
-    [
-        'title'    => 'Man Utd xác nhận kế hoạch chiêu mộ tiền đạo hàng đầu châu Âu',
-        'category' => 'Bóng đá',
-        'status'   => 'Đã đăng',
-        'views'    => '12.4K',
-    ],
-    [
-        'title'    => 'Đội tuyển Việt Nam hội quân hướng tới Asian Cup 2027',
-        'category' => 'Bóng đá',
-        'status'   => 'Đã đăng',
-        'views'    => '8.2K',
-    ],
-    [
-        'title'    => 'Những tài năng trẻ đáng xem của làng bóng rổ',
-        'category' => 'Bóng rổ',
-        'status'   => 'Đang ẩn',
-        'views'    => '4.8K',
-    ],
-];
 
 $mockComments = [
     [
@@ -342,8 +352,10 @@ $navigationIcons = [
 
                             <thead>
                                 <tr>
+                                    <th>ID</th>
                                     <th>Nội dung</th>
                                     <th>Danh mục</th>
+                                    <th>Ngày đăng</th>
                                     <th>Lượt xem</th>
                                     <th>Trạng thái</th>
                                 </tr>
@@ -351,9 +363,13 @@ $navigationIcons = [
 
                             <tbody>
 
-                                <?php foreach ($mockArticles as $article): ?>
+                                <?php foreach ($articles as $article): ?>
 
                                     <tr>
+                                        <td class="muted">
+                                            #<?php echo (int) $article['article_id']; ?>
+                                        </td>
+
                                         <td>
                                             <strong>
                                                 <?php echo adminEscape($article['title']); ?>
@@ -361,18 +377,24 @@ $navigationIcons = [
                                         </td>
 
                                         <td>
-                                            <?php echo adminEscape($article['category']); ?>
+                                            <?php echo adminEscape((string) ($article['category_name'] ?? 'Chưa phân loại')); ?>
+                                        </td>
+
+                                        <td class="muted">
+                                            <?php echo adminEscape(adminArticleDate($article['published_at'] ?? null)); ?>
                                         </td>
 
                                         <td>
-                                            <?php echo $article['views']; ?>
+                                            <?php echo number_format((int) $article['views']); ?>
                                         </td>
 
                                         <td>
                                             <span
-                                                class="status <?php echo $article['status'] === 'Đã đăng' ? 'on' : 'off'; ?>"
+                                                class="status <?php echo $article['status'] === 'published' ? 'on' : 'off'; ?>"
                                             >
-                                                <?php echo $article['status']; ?>
+                                                <?php echo $article['status'] === 'published'
+                                                    ? 'Đã đăng'
+                                                    : ($article['status'] === 'hidden' ? 'Đang ẩn' : 'Bản nháp'); ?>
                                             </span>
                                         </td>
                                     </tr>
@@ -404,6 +426,11 @@ $navigationIcons = [
                 </div>
 
                 <div class="panel">
+                    <?php if ($articleError !== ''): ?>
+                        <p class="admin-alert error">
+                            Không thể tải bài viết: <?php echo adminEscape($articleError); ?>
+                        </p>
+                    <?php endif; ?>
 
                     <div class="table-wrap">
 
@@ -411,8 +438,11 @@ $navigationIcons = [
 
                             <thead>
                                 <tr>
+                                    <th>ID</th>
+                                    <th>Hình ảnh</th>
                                     <th>Tiêu đề</th>
                                     <th>Danh mục</th>
+                                    <th>Ngày đăng</th>
                                     <th>Lượt xem</th>
                                     <th>Trạng thái</th>
                                     <th>Thao tác</th>
@@ -421,9 +451,17 @@ $navigationIcons = [
 
                             <tbody>
 
-                                <?php foreach ($mockArticles as $article): ?>
+                                <?php foreach ($articles as $article): ?>
 
                                     <tr>
+                                        <td class="muted">
+                                            #<?php echo (int) $article['article_id']; ?>
+                                        </td>
+                                        
+                                        <td>
+                                            <img src="<?php echo adminEscape($article['images'] ?? ''); ?>" alt="Hình ảnh" width="100" height="100">
+                                        </td>
+
                                         <td>
                                             <strong>
                                                 <?php echo adminEscape($article['title']); ?>
@@ -431,18 +469,24 @@ $navigationIcons = [
                                         </td>
 
                                         <td>
-                                            <?php echo adminEscape($article['category']); ?>
+                                            <?php echo adminEscape((string) ($article['category_name'] ?? 'Chưa phân loại')); ?>
+                                        </td>
+
+                                        <td class="muted">
+                                            <?php echo adminEscape(adminArticleDate($article['published_at'] ?? null)); ?>
                                         </td>
 
                                         <td>
-                                            <?php echo $article['views']; ?>
+                                            <?php echo number_format((int) $article['views']); ?>
                                         </td>
 
                                         <td>
                                             <span
-                                                class="status <?php echo $article['status'] === 'Đã đăng' ? 'on' : 'off'; ?>"
+                                                class="status <?php echo $article['status'] === 'published' ? 'on' : 'off'; ?>"
                                             >
-                                                <?php echo $article['status']; ?>
+                                                <?php echo $article['status'] === 'published'
+                                                    ? 'Đã đăng'
+                                                    : ($article['status'] === 'hidden' ? 'Đang ẩn' : 'Bản nháp'); ?>
                                             </span>
                                         </td>
 
