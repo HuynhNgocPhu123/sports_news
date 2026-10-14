@@ -71,11 +71,14 @@ h2::before { border-left: 3px solid var(--green); content: ''; margin-right: 9px
 .category-content { bottom: 9px; left: 3px; position: absolute; right: 3px; z-index: 1; }
 .category strong { display: block; font-size: 10px; line-height: 1.25; }
 .category small { color: #c7d8d9; display: block; font-size: 9px; margin-top: 4px; }
-.cta { align-items: center; background: linear-gradient(90deg, #087c62, #69a83a); border-radius: 5px; color: white; display: flex; justify-content: space-between; margin-top: 14px; overflow: hidden; padding: 17px 42px; }
-.cta h2 { margin-bottom: 3px; }
+.cta { align-items: center; background: url('../images/bao2.jpg') center 58%/cover no-repeat; border-radius: 8px; color: white; display: flex; justify-content: space-between; margin-top: 18px; min-height: 190px; overflow: hidden; padding: 30px 42px; position: relative; }
+.cta::before { background: linear-gradient(90deg, rgba(8, 35, 42, .84), rgba(8, 35, 42, .42) 62%, rgba(8, 35, 42, .2)); content: ''; inset: 0; position: absolute; }
+.cta > * { position: relative; z-index: 1; }
+.cta h2 { font-size: 24px; line-height: 1.2; margin: 0 0 8px; text-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
 .cta h2::before { display: none; }
-.cta p { margin: 0; }
-.cta a { background: white; border-radius: 18px; color: var(--green); font-size: 11px; font-weight: 700; padding: 9px 15px; }
+.cta p { color: #e1eded; margin: 0; }
+.cta a { background: white; border-radius: 20px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); color: var(--green); font-size: 11px; font-weight: 700; padding: 11px 18px; transition: background .2s, color .2s, transform .2s; }
+.cta a:hover { background: var(--green); color: white; transform: translateY(-2px); }
 footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; padding: 18px 0; }
 .footer-inner { align-items: center; display: flex; justify-content: space-between; }
 .database-error { color: #b91c1c; }
@@ -94,6 +97,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 10px
     .hero { min-height: 310px; }
     .featured-grid { gap: 9px; }
     .category-grid { gap: 7px; }
-    .cta { align-items: flex-start; flex-direction: column; gap: 14px; padding: 18px; }
+    .cta { align-items: flex-start; flex-direction: column; gap: 18px; min-height: 235px; padding: 26px 20px; }
+    .cta h2 { font-size: 21px; }
     .footer-inner { align-items: flex-start; flex-direction: column; gap: 8px; }
 }
