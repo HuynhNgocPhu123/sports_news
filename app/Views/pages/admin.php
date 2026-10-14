@@ -17,9 +17,16 @@ $users = [];
 $userError = '';
 $categoryActionResult = null;
 
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['category_action'] ?? '') === 'update') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['category_action'] ?? '') !== '') {
     require_once __DIR__ . '/../../Controllers/CategoryController.php';
-    $categoryActionResult = CategoryController::update($_POST, $_FILES['images'] ?? null);
+    $categoryAction = (string) $_POST['category_action'];
+    if ($categoryAction === 'create') {
+        $categoryActionResult = CategoryController::create($_POST, $_FILES['images'] ?? null);
+    } elseif ($categoryAction === 'delete') {
+        $categoryActionResult = CategoryController::delete($_POST);
+    } else {
+        $categoryActionResult = CategoryController::update($_POST, $_FILES['images'] ?? null);
+    }
 }
 
 try {
@@ -389,7 +396,7 @@ $navigationIcons = [
                         <p>Thêm, sửa, đăng/ẩn và xóa bài viết</p>
                     </div>
 
-                    <button class="button">
+                    <button class="button" type="button">
                         <i class="fa-solid fa-plus"></i>
                         Thêm bài viết
                     </button>
@@ -489,7 +496,7 @@ $navigationIcons = [
                         <p>Dữ liệu đang được tải trực tiếp từ database</p>
                     </div>
 
-                    <button class="button">
+                    <button class="button" type="button" onclick="openCreateCategoryModal();">
                         <i class="fa-solid fa-plus"></i>
                         Thêm chuyên mục
                     </button>
@@ -588,6 +595,9 @@ $navigationIcons = [
                                                     class="action delete"
                                                     href="#"
                                                     title="Xóa"
+                                                    data-category-id="<?php echo adminEscape((string) $category['category_id']); ?>"
+                                                    data-category-name="<?php echo adminEscape((string) $category['category_name']); ?>"
+                                                    onclick="openDeleteCategoryModal(event, this);"
                                                 >
                                                     <i class="fa-solid fa-trash"></i>
                                                 </a>
@@ -811,12 +821,63 @@ $navigationIcons = [
     <div class="update-success-modal" role="status" aria-live="polite">
         <div class="update-success-card">
             <div class="update-success-icon"><i class="fa-solid fa-circle-check"></i></div>
-            <h2>Cập nhật thành công</h2>
-            <p>Thông tin chuyên mục đã được lưu. Trang sẽ tải lại ngay.</p>
+            <h2>
+                <?php
+                echo $categoryAction === 'create'
+                    ? 'Thêm thành công'
+                    : ($categoryAction === 'delete' ? 'Xóa thành công' : 'Cập nhật thành công');
+                ?>
+            </h2>
+            <p><?php echo adminEscape($categoryActionResult['message']); ?> Trang sẽ tải lại ngay.</p>
             <div class="update-progress"><span></span></div>
         </div>
     </div>
 <?php endif; ?>
+<div class="modal-backdrop" id="category-create-modal" aria-hidden="true">
+    <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="category-create-modal-title">
+        <button class="modal-close" type="button" aria-label="Đóng" onclick="closeCreateCategoryModal();">&times;</button>
+        <h2 id="category-create-modal-title">Thêm chuyên mục</h2>
+        <p>Nhập thông tin chuyên mục mới và lưu trực tiếp vào database.</p>
+        <form method="post" action="?page=admin&amp;section=categories" enctype="multipart/form-data">
+            <input type="hidden" name="category_action" value="create">
+            <label for="new-category-name">Tên chuyên mục</label>
+            <input type="text" name="category_name" id="new-category-name" maxlength="100" required>
+            <label for="new-category-slug">Slug</label>
+            <input type="text" name="slug" id="new-category-slug" maxlength="100" required>
+            <label for="new-category-images">Chọn hình ảnh</label>
+            <input type="file" name="images" id="new-category-images">
+            <span class="file-note">Ảnh JPG, PNG, GIF hoặc WEBP, tối đa 5MB. Hệ thống kiểm tra theo nội dung ảnh.</span>
+            <label for="new-category-description">Mô tả</label>
+            <textarea name="description" id="new-category-description" maxlength="255" rows="3"></textarea>
+            <div class="modal-actions">
+                <button class="button light" type="button" onclick="closeCreateCategoryModal();">Hủy</button>
+                <button class="button" type="submit"><i class="fa-solid fa-plus"></i>Thêm chuyên mục</button>
+            </div>
+        </form>
+    </section>
+</div>
+<div class="modal-backdrop" id="category-delete-modal" aria-hidden="true">
+    <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="category-delete-modal-title">
+        <button class="modal-close" type="button" aria-label="Đóng" onclick="closeDeleteCategoryModal();">&times;</button>
+        <h2 id="category-delete-modal-title">Xóa chuyên mục?</h2>
+        <p>
+            Bạn có chắc chắn muốn xóa chuyên mục
+            <strong id="delete-category-name"></strong> không?
+            Dữ liệu sẽ bị xóa khỏi database và không thể khôi phục.
+        </p>
+        <form method="post" action="?page=admin&amp;section=categories">
+            <input type="hidden" name="category_action" value="delete">
+            <input type="hidden" name="category_id" id="delete-category-id">
+            <div class="modal-actions">
+                <button class="button light" type="button" onclick="closeDeleteCategoryModal();">Hủy</button>
+                <button class="button delete-confirm" type="submit">
+                    <i class="fa-solid fa-trash"></i>
+                    Xóa chuyên mục
+                </button>
+            </div>
+        </form>
+    </section>
+</div>
 <div class="modal-backdrop" id="category-modal" aria-hidden="true">
     <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="category-modal-title">
         <button class="modal-close" type="button" aria-label="Đóng" onclick="closeCategoryModal();">&times;</button>
@@ -831,8 +892,8 @@ $navigationIcons = [
             <input type="text" name="slug" id="category-slug" maxlength="100" required>
             <input type="hidden" name="current_images" id="category-current-images">
             <label for="category-images">Chọn hình ảnh</label>
-            <input type="file" name="images" id="category-images" accept="image/jpeg,image/png,image/gif,image/webp">
-            <span class="file-note" id="category-image-note">Nếu không chọn ảnh mới, ảnh hiện tại sẽ được giữ lại.</span>
+            <input type="file" name="images" id="category-images">
+            <span class="file-note" id="category-image-note">Nếu không chọn ảnh mới, ảnh hiện tại sẽ được giữ lại. Hệ thống kiểm tra theo nội dung ảnh.</span>
             <label for="category-description">Mô tả</label>
             <textarea name="description" id="category-description" maxlength="255" rows="3"></textarea>
             <div class="modal-actions">
@@ -862,9 +923,44 @@ $navigationIcons = [
         document.getElementById('category-modal').setAttribute('aria-hidden', 'true');
     }
 
+    function openCreateCategoryModal() {
+        document.getElementById('category-create-modal').classList.add('open');
+        document.getElementById('category-create-modal').setAttribute('aria-hidden', 'false');
+    }
+
+    function closeCreateCategoryModal() {
+        document.getElementById('category-create-modal').classList.remove('open');
+        document.getElementById('category-create-modal').setAttribute('aria-hidden', 'true');
+    }
+
+    function openDeleteCategoryModal(event, trigger) {
+        event.preventDefault();
+        document.getElementById('delete-category-id').value = trigger.dataset.categoryId;
+        document.getElementById('delete-category-name').textContent = trigger.dataset.categoryName;
+        document.getElementById('category-delete-modal').classList.add('open');
+        document.getElementById('category-delete-modal').setAttribute('aria-hidden', 'false');
+    }
+
+    function closeDeleteCategoryModal() {
+        document.getElementById('category-delete-modal').classList.remove('open');
+        document.getElementById('category-delete-modal').setAttribute('aria-hidden', 'true');
+    }
+
     document.getElementById('category-modal').addEventListener('click', function (event) {
         if (event.target === this) {
             closeCategoryModal();
+        }
+    });
+
+    document.getElementById('category-create-modal').addEventListener('click', function (event) {
+        if (event.target === this) {
+            closeCreateCategoryModal();
+        }
+    });
+
+    document.getElementById('category-delete-modal').addEventListener('click', function (event) {
+        if (event.target === this) {
+            closeDeleteCategoryModal();
         }
     });
 </script>
