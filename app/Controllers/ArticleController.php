@@ -4,6 +4,183 @@ declare(strict_types=1);
 
 final class ArticleController
 {
+    public static function create(array $input, ?array $imageFile = null): array
+    {
+        $authorId = (int) ($input['author_id'] ?? 0);
+        $categoryId = (int) ($input['category_id'] ?? 0);
+        $title = trim((string) ($input['title'] ?? ''));
+        $slug = trim((string) ($input['slug'] ?? ''));
+        $summary = trim((string) ($input['summary'] ?? ''));
+        $content = trim((string) ($input['content'] ?? ''));
+        $status = (string) ($input['status'] ?? 'draft');
+        $publishedAt = trim((string) ($input['published_at'] ?? ''));
+        $storedImage = null;
+        $mysqli = null;
+
+        if ($authorId < 1 || $categoryId < 1 || $title === '' || $slug === '' || $content === '') {
+            return array('success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin bắt buộc.');
+        }
+        if (!in_array($status, array('draft', 'published', 'hidden'), true)) {
+            return array('success' => false, 'message' => 'Trạng thái bài viết không hợp lệ.');
+        }
+
+        $publishedAt = $publishedAt === '' ? null : str_replace('T', ' ', $publishedAt);
+
+        try {
+            require_once __DIR__ . '/../Config/Database.php';
+            $mysqli = Database::connect();
+            $emptyImage = '';
+            $statement = $mysqli->prepare(
+                'INSERT INTO articles
+                    (category_id, author_id, title, slug, summary, content, status, published_at, images)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $statement->bind_param(
+                'iisssssss',
+                $categoryId,
+                $authorId,
+                $title,
+                $slug,
+                $summary,
+                $content,
+                $status,
+                $publishedAt,
+                $emptyImage
+            );
+            $statement->execute();
+            $articleId = $mysqli->insert_id;
+            $statement->close();
+
+            if (is_array($imageFile) && (int) ($imageFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                $storedImage = self::storeArticleImage($imageFile, $articleId);
+                $imageStatement = $mysqli->prepare(
+                    'UPDATE articles SET images = ? WHERE article_id = ?'
+                );
+                $imageStatement->bind_param('si', $storedImage, $articleId);
+                $imageStatement->execute();
+                $imageStatement->close();
+            }
+
+            $mysqli->close();
+
+            return array('success' => true, 'message' => 'Thêm bài viết thành công.');
+        } catch (RuntimeException $exception) {
+            if ($storedImage !== null) {
+                self::removeStoredImage($storedImage);
+            }
+            if ($mysqli instanceof mysqli) {
+                $mysqli->close();
+            }
+
+            return array('success' => false, 'message' => $exception->getMessage());
+        } catch (mysqli_sql_exception $exception) {
+            if ($storedImage !== null) {
+                self::removeStoredImage($storedImage);
+            }
+            if ($mysqli instanceof mysqli) {
+                $mysqli->close();
+            }
+
+            return array('success' => false, 'message' => 'Không thể thêm bài viết lúc này.');
+        }
+    }
+
+    public static function toggleVisibility(array $input): array
+    {
+        $articleId = (int) ($input['article_id'] ?? 0);
+
+        if ($articleId < 1) {
+            return array('success' => false, 'message' => 'Bài viết cần cập nhật không hợp lệ.');
+        }
+
+        $mysqli = null;
+
+        try {
+            require_once __DIR__ . '/../Config/Database.php';
+            $mysqli = Database::connect();
+
+            $select = $mysqli->prepare(
+                'SELECT status, published_at FROM articles WHERE article_id = ? LIMIT 1'
+            );
+            $select->bind_param('i', $articleId);
+            $select->execute();
+            $select->bind_result($currentStatus, $publishedAt);
+
+            if (!$select->fetch()) {
+                $select->close();
+                $mysqli->close();
+
+                return array('success' => false, 'message' => 'Không tìm thấy bài viết cần cập nhật.');
+            }
+
+            $select->close();
+            $nextStatus = $currentStatus === 'published' ? 'hidden' : 'published';
+
+            if ($nextStatus === 'published' && ($publishedAt === null || $publishedAt === '')) {
+                $publishedAt = date('Y-m-d H:i:s');
+            }
+
+            $update = $mysqli->prepare(
+                'UPDATE articles SET status = ?, published_at = ? WHERE article_id = ?'
+            );
+            $update->bind_param('ssi', $nextStatus, $publishedAt, $articleId);
+            $update->execute();
+            $updated = $update->affected_rows >= 0;
+            $update->close();
+            $mysqli->close();
+
+            return array(
+                'success' => $updated,
+                'message' => $nextStatus === 'published'
+                    ? 'Đăng bài viết thành công.'
+                    : 'Ẩn bài viết thành công.',
+            );
+        } catch (mysqli_sql_exception $exception) {
+            if ($mysqli instanceof mysqli) {
+                $mysqli->close();
+            }
+
+            return array('success' => false, 'message' => 'Không thể cập nhật trạng thái bài viết lúc này.');
+        }
+    }
+
+    public static function delete(array $input): array
+    {
+        $articleId = (int) ($input['article_id'] ?? 0);
+
+        if ($articleId < 1) {
+            return array('success' => false, 'message' => 'Bài viết cần xóa không hợp lệ.');
+        }
+
+        $mysqli = null;
+
+        try {
+            require_once __DIR__ . '/../Config/Database.php';
+            $mysqli = Database::connect();
+            $statement = $mysqli->prepare(
+                'DELETE FROM articles WHERE article_id = ?'
+            );
+            $statement->bind_param('i', $articleId);
+            $statement->execute();
+            $deleted = $statement->affected_rows === 1;
+            $statement->close();
+            $mysqli->close();
+
+            return array(
+                'success' => $deleted,
+                'message' => $deleted
+                    ? 'Xóa bài viết thành công.'
+                    : 'Không tìm thấy bài viết cần xóa.',
+            );
+        } catch (mysqli_sql_exception $exception) {
+            if ($mysqli instanceof mysqli) {
+                $mysqli->close();
+            }
+
+            return array('success' => false, 'message' => 'Không thể xóa bài viết lúc này.');
+        }
+    }
+
     public static function update(array $input, ?array $imageFile = null): array
     {
         $articleId = (int) ($input['article_id'] ?? 0);

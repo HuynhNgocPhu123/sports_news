@@ -8,7 +8,7 @@ declare(strict_types=1);
             <h2>Danh sách bài viết</h2>
             <p>Thêm, sửa, đăng/ẩn và xóa bài viết</p>
         </div>
-        <button class="button" type="button">
+        <button class="button" type="button" onclick="openCreateArticleModal();">
             <i class="fa-solid fa-plus"></i>
             Thêm bài viết
         </button>
@@ -69,8 +69,25 @@ declare(strict_types=1);
                                         data-images="<?php echo adminEscape((string) ($article['images'] ?? '')); ?>"
                                         onclick="openArticleModal(event, this);"
                                     ><i class="fa-solid fa-pen"></i></a>
-                                    <a class="action" href="#" title="Đăng/ẩn"><i class="fa-solid fa-eye"></i></a>
-                                    <a class="action delete" href="#" title="Xóa"><i class="fa-solid fa-trash"></i></a>
+                                    <a
+                                        class="action"
+                                        href="#"
+                                        title="<?php echo $article['status'] === 'published' ? 'Ẩn bài viết' : 'Đăng bài viết'; ?>"
+                                        data-article-id="<?php echo (int) $article['article_id']; ?>"
+                                        data-article-title="<?php echo adminEscape((string) $article['title']); ?>"
+                                        data-article-status="<?php echo adminEscape((string) $article['status']); ?>"
+                                        onclick="openToggleArticleModal(event, this);"
+                                    >
+                                        <i class="fa-solid <?php echo $article['status'] === 'published' ? 'fa-eye-slash' : 'fa-eye'; ?>"></i>
+                                    </a>
+                                    <a
+                                        class="action delete"
+                                        href="#"
+                                        title="Xóa bài viết"
+                                        data-article-id="<?php echo (int) $article['article_id']; ?>"
+                                        data-article-title="<?php echo adminEscape((string) $article['title']); ?>"
+                                        onclick="openDeleteArticleModal(event, this);"
+                                    ><i class="fa-solid fa-trash"></i></a>
                                 </div>
                             </td>
                         </tr>
@@ -85,6 +102,89 @@ declare(strict_types=1);
             <?php echo adminEscape((string) $articleActionResult['message']); ?>
         </div>
     <?php endif; ?>
+    <div class="modal-backdrop" id="article-delete-modal" aria-hidden="true">
+        <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="article-delete-modal-title">
+            <button class="modal-close" type="button" aria-label="Đóng" onclick="closeDeleteArticleModal();">&times;</button>
+            <h2 id="article-delete-modal-title">Xóa bài viết?</h2>
+            <p>
+                Thao tác này sẽ xóa vĩnh viễn bài viết khỏi database. Bạn có chắc chắn
+                muốn xóa bài viết <strong id="delete-article-title"></strong> không?
+            </p>
+            <form method="post" action="?page=admin&amp;section=articles">
+                <input type="hidden" name="article_action" value="delete">
+                <input type="hidden" name="article_id" id="delete-article-id">
+                <div class="modal-actions">
+                    <button class="button light" type="button" onclick="closeDeleteArticleModal();">Hủy</button>
+                    <button class="button delete-confirm" type="submit">
+                        <i class="fa-solid fa-trash"></i>
+                        Xóa bài viết
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+    <div class="modal-backdrop" id="article-create-modal" aria-hidden="true">
+        <section class="admin-modal article-modal" role="dialog" aria-modal="true" aria-labelledby="article-create-modal-title">
+            <button class="modal-close" type="button" aria-label="Đóng" onclick="closeCreateArticleModal();">&times;</button>
+            <h2 id="article-create-modal-title">Thêm bài viết</h2>
+            <p>Nhập nội dung bài viết mới và lưu trực tiếp vào database.</p>
+            <form method="post" action="?page=admin&amp;section=articles" enctype="multipart/form-data">
+                <input type="hidden" name="article_action" value="create">
+                <label for="new-article-category-id">Danh mục</label>
+                <select name="category_id" id="new-article-category-id" required>
+                    <?php foreach ($categories as $category): ?>
+                        <option value="<?php echo (int) $category['category_id']; ?>">
+                            <?php echo adminEscape((string) $category['category_name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <label for="new-article-title">Tiêu đề</label>
+                <input type="text" name="title" id="new-article-title" maxlength="255" required>
+                <label for="new-article-slug">Slug</label>
+                <input type="text" name="slug" id="new-article-slug" maxlength="255" required>
+                <label for="new-article-summary">Tóm tắt</label>
+                <textarea name="summary" id="new-article-summary" rows="3"></textarea>
+                <label for="new-article-content">Nội dung</label>
+                <textarea name="content" id="new-article-content" rows="8" required></textarea>
+                <label for="new-article-status">Trạng thái</label>
+                <select name="status" id="new-article-status" required>
+                    <option value="draft">Bản nháp</option>
+                    <option value="published">Đã đăng</option>
+                    <option value="hidden">Đang ẩn</option>
+                </select>
+                <label for="new-article-published-at">Ngày đăng</label>
+                <input type="datetime-local" name="published_at" id="new-article-published-at">
+                <label for="new-article-images">Hình ảnh</label>
+                <input type="file" name="images" id="new-article-images">
+                <span class="file-note">Nếu không chọn ảnh, bài viết vẫn được tạo.</span>
+                <div class="modal-actions">
+                    <button class="button light" type="button" onclick="closeCreateArticleModal();">Hủy</button>
+                    <button class="button" type="submit"><i class="fa-solid fa-plus"></i>Thêm bài viết</button>
+                </div>
+            </form>
+        </section>
+    </div>
+    <div class="modal-backdrop" id="article-toggle-modal" aria-hidden="true">
+        <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="article-toggle-modal-title">
+            <button class="modal-close" type="button" aria-label="Đóng" onclick="closeToggleArticleModal();">&times;</button>
+            <h2 id="article-toggle-modal-title">Cập nhật trạng thái bài viết?</h2>
+            <p>
+                Bạn có chắc chắn muốn <strong id="toggle-article-action"></strong> bài viết
+                <strong id="toggle-article-title"></strong> không?
+            </p>
+            <form method="post" action="?page=admin&amp;section=articles">
+                <input type="hidden" name="article_action" value="toggle">
+                <input type="hidden" name="article_id" id="toggle-article-id">
+                <div class="modal-actions">
+                    <button class="button light" type="button" onclick="closeToggleArticleModal();">Hủy</button>
+                    <button class="button" type="submit" id="toggle-article-submit">
+                        <i class="fa-solid fa-eye"></i>
+                        <span>Đồng ý</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
     <div class="modal-backdrop" id="article-modal" aria-hidden="true">
         <section class="admin-modal article-modal" role="dialog" aria-modal="true" aria-labelledby="article-modal-title">
             <button class="modal-close" type="button" aria-label="Đóng" onclick="closeArticleModal();">&times;</button>
@@ -146,13 +246,64 @@ declare(strict_types=1);
             document.getElementById('article-modal').classList.add('open');
             document.getElementById('article-modal').setAttribute('aria-hidden', 'false');
         }
+        function openCreateArticleModal() {
+            document.getElementById('article-create-modal').classList.add('open');
+            document.getElementById('article-create-modal').setAttribute('aria-hidden', 'false');
+        }
+        function closeCreateArticleModal() {
+            document.getElementById('article-create-modal').classList.remove('open');
+            document.getElementById('article-create-modal').setAttribute('aria-hidden', 'true');
+        }
+        function openDeleteArticleModal(event, trigger) {
+            event.preventDefault();
+            document.getElementById('delete-article-id').value = trigger.dataset.articleId;
+            document.getElementById('delete-article-title').textContent = trigger.dataset.articleTitle;
+            document.getElementById('article-delete-modal').classList.add('open');
+            document.getElementById('article-delete-modal').setAttribute('aria-hidden', 'false');
+        }
+        function closeDeleteArticleModal() {
+            document.getElementById('article-delete-modal').classList.remove('open');
+            document.getElementById('article-delete-modal').setAttribute('aria-hidden', 'true');
+        }
         function closeArticleModal() {
             document.getElementById('article-modal').classList.remove('open');
             document.getElementById('article-modal').setAttribute('aria-hidden', 'true');
         }
+        function openToggleArticleModal(event, trigger) {
+            event.preventDefault();
+            var shouldHide = trigger.dataset.articleStatus === 'published';
+            document.getElementById('toggle-article-id').value = trigger.dataset.articleId;
+            document.getElementById('toggle-article-title').textContent = trigger.dataset.articleTitle;
+            document.getElementById('toggle-article-action').textContent = shouldHide ? 'ẩn' : 'đăng';
+            document.getElementById('toggle-article-submit').classList.toggle('delete-confirm', shouldHide);
+            document.getElementById('toggle-article-submit').querySelector('span').textContent = shouldHide
+                ? 'Ẩn bài viết'
+                : 'Đăng bài viết';
+            document.getElementById('article-toggle-modal').classList.add('open');
+            document.getElementById('article-toggle-modal').setAttribute('aria-hidden', 'false');
+        }
+        function closeToggleArticleModal() {
+            document.getElementById('article-toggle-modal').classList.remove('open');
+            document.getElementById('article-toggle-modal').setAttribute('aria-hidden', 'true');
+        }
         document.getElementById('article-modal').addEventListener('click', function (event) {
             if (event.target === this) {
                 closeArticleModal();
+            }
+        });
+        document.getElementById('article-create-modal').addEventListener('click', function (event) {
+            if (event.target === this) {
+                closeCreateArticleModal();
+            }
+        });
+        document.getElementById('article-delete-modal').addEventListener('click', function (event) {
+            if (event.target === this) {
+                closeDeleteArticleModal();
+            }
+        });
+        document.getElementById('article-toggle-modal').addEventListener('click', function (event) {
+            if (event.target === this) {
+                closeToggleArticleModal();
             }
         });
     </script>

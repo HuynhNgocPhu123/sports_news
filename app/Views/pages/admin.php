@@ -37,7 +37,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['category_action
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['article_action'] ?? '') !== '') {
-    $articleActionResult = ArticleController::update($_POST, $_FILES['images'] ?? null);
+    $articleAction = (string) $_POST['article_action'];
+    if ($articleAction === 'toggle') {
+        $articleActionResult = ArticleController::toggleVisibility($_POST);
+    } elseif ($articleAction === 'delete') {
+        $articleActionResult = ArticleController::delete($_POST);
+    } elseif ($articleAction === 'create') {
+        $_POST['author_id'] = (int) ($currentUser['user_id'] ?? 0);
+        $articleActionResult = ArticleController::create($_POST, $_FILES['images'] ?? null);
+    } else {
+        $articleActionResult = ArticleController::update($_POST, $_FILES['images'] ?? null);
+    }
 }
 
 try {
@@ -604,7 +614,9 @@ $navigationIcons = [
             <h2>
                 <?php
                 echo $articleActionResult !== null
-                    ? 'Cập nhật thành công'
+                    ? ($articleAction === 'create'
+                        ? 'Thêm thành công'
+                        : ($articleAction === 'delete' ? 'Xóa thành công' : 'Cập nhật thành công'))
                     : ($categoryAction === 'create'
                         ? 'Thêm thành công'
                         : ($categoryAction === 'delete' ? 'Xóa thành công' : 'Cập nhật thành công'));
