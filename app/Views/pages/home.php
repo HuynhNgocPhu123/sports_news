@@ -65,7 +65,17 @@ function articleMeta(array $article): string
 
 $heroArticle = $articles[0] ?? null;
 $latestArticles = array_slice($articles, 1, 4);
-$featuredArticles = array_slice($articles, 0, 4);
+$featuredPool = $articles;
+usort($featuredPool, static function (array $left, array $right): int {
+    $viewComparison = (int) ($right['views'] ?? 0) <=> (int) ($left['views'] ?? 0);
+
+    if ($viewComparison !== 0) {
+        return $viewComparison;
+    }
+
+    return (int) ($right['article_id'] ?? 0) <=> (int) ($left['article_id'] ?? 0);
+});
+$featuredArticles = array_slice($featuredPool, 0, 4);
 $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 ?>
 <!DOCTYPE html>
@@ -196,7 +206,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
                 <div class="slider-dots"><i class="active"></i><i></i><i></i><i></i></div>
             </article>
             <aside>
-                <div class="section-title"><h2>Tin mới nhất</h2><a class="view-all" href="#">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
+                <div class="section-title"><h2>Tin mới nhất</h2><a class="view-all" href="?page=articles">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
                 <div class="latest-list">
                     <?php foreach ($latestArticles as $article) : ?>
                         <article class="latest-item">
@@ -218,7 +228,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
         <?php endif; ?>
 
         <section class="scroll-reveal">
-            <div class="section-title"><h2>Tin nổi bật</h2><a class="view-all" href="#">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="section-title"><h2>Tin nổi bật</h2><a class="view-all" href="?page=articles">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
             <div class="featured-grid">
                 <?php foreach ($featuredArticles as $article) : ?>
                     <article class="featured-card">
@@ -239,7 +249,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
         </section>
 
         <section class="scroll-reveal">
-            <div class="section-title"><h2>Danh mục tin tức</h2><a class="view-all" href="#">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="section-title"><h2>Danh mục tin tức</h2><a class="view-all" href="?page=articles">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
             <div class="category-grid">
                 <?php foreach ($categories as $category) : ?>
                     <a class="category" href="?category=<?php echo rawurlencode((string) $category['slug']); ?>">

@@ -20,6 +20,11 @@ if ($page === 'detail') {
     exit;
 }
 
+if ($page === 'articles') {
+    require __DIR__ . '/app/Views/pages/articles.php';
+    exit;
+}
+
 if ($page === 'register') {
     require __DIR__ . '/app/Views/pages/register.php';
     exit;
