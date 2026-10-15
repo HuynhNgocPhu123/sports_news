@@ -65,6 +65,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['user_action'] ?
         $userActionResult = UserController::create($_POST);
     } elseif ($userAction === 'lock') {
         $userActionResult = UserController::lock($_POST);
+    } elseif ($userAction === 'unlock') {
+        $userActionResult = UserController::unlock($_POST);
     } elseif ($userAction === 'update') {
         $userActionResult = UserController::update($_POST);
     }
@@ -520,14 +522,15 @@ $navigationIcons = [
                                                 </a>
 
                                                 <a
-                                                    class="action hide"
+                                                    class="action <?php echo (int) $user['status'] === 2 ? 'edit' : 'hide'; ?>"
                                                     href="#"
-                                                    title="Khóa tài khoản"
+                                                    title="<?php echo (int) $user['status'] === 2 ? 'Mở khóa tài khoản' : 'Khóa tài khoản'; ?>"
                                                     data-user-id="<?php echo (int) $user['user_id']; ?>"
                                                     data-user-name="<?php echo adminEscape((string) ($user['full_name'] ?: $user['username'])); ?>"
+                                                    data-user-status="<?php echo (int) $user['status']; ?>"
                                                     onclick="openLockUserModal(event, this);"
                                                 >
-                                                    <i class="fa-solid fa-lock"></i>
+                                                    <i class="fa-solid <?php echo (int) $user['status'] === 2 ? 'fa-lock-open' : 'fa-lock'; ?>"></i>
                                                 </a>
 
                                             </div>
@@ -584,17 +587,17 @@ $navigationIcons = [
                         <button class="modal-close" type="button" aria-label="Đóng" onclick="closeLockUserModal();">&times;</button>
                         <h2 id="user-lock-modal-title">Khóa tài khoản?</h2>
                         <p>
-                            Bạn có chắc chắn muốn khóa tài khoản
+                            <span id="lock-user-message">Bạn có chắc chắn muốn khóa tài khoản</span>
                             <strong id="lock-user-name"></strong> không?
                         </p>
                         <form method="post" action="?page=admin&amp;section=users">
-                            <input type="hidden" name="user_action" value="lock">
+                            <input type="hidden" name="user_action" value="lock" id="lock-user-action">
                             <input type="hidden" name="user_id" id="lock-user-id">
                             <div class="modal-actions">
                                 <button class="button light" type="button" onclick="closeLockUserModal();">Hủy</button>
-                                <button class="button delete-confirm" type="submit">
-                                    <i class="fa-solid fa-lock"></i>
-                                    Khóa tài khoản
+                                <button class="button delete-confirm" type="submit" id="lock-user-submit">
+                                    <i class="fa-solid fa-lock" id="lock-user-submit-icon"></i>
+                                    <span id="lock-user-submit-text">Khóa tài khoản</span>
                                 </button>
                             </div>
                         </form>
@@ -664,6 +667,16 @@ $navigationIcons = [
                         event.preventDefault();
                         document.getElementById('lock-user-id').value = trigger.dataset.userId;
                         document.getElementById('lock-user-name').textContent = trigger.dataset.userName;
+                        var isLocked = trigger.dataset.userStatus === '2';
+                        document.getElementById('user-lock-modal-title').textContent = isLocked ? 'Mở khóa tài khoản?' : 'Khóa tài khoản?';
+                        document.getElementById('lock-user-message').textContent = isLocked
+                            ? 'Bạn có chắc chắn muốn mở khóa tài khoản'
+                            : 'Bạn có chắc chắn muốn khóa tài khoản';
+                        document.getElementById('lock-user-action').value = isLocked ? 'unlock' : 'lock';
+                        document.getElementById('lock-user-submit-text').textContent = isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản';
+                        document.getElementById('lock-user-submit-icon').className = isLocked
+                            ? 'fa-solid fa-lock-open'
+                            : 'fa-solid fa-lock';
                         document.getElementById('user-lock-modal').classList.add('open');
                         document.getElementById('user-lock-modal').setAttribute('aria-hidden', 'false');
                     }
@@ -821,7 +834,7 @@ $navigationIcons = [
                     : ($userActionResult !== null
                     ? ($userAction === 'create'
                         ? 'Thêm thành công'
-                        : ($userAction === 'lock' ? 'Khóa thành công' : 'Cập nhật thành công'))
+                        : ($userAction === 'lock' ? 'Khóa thành công' : ($userAction === 'unlock' ? 'Mở khóa thành công' : 'Cập nhật thành công')))
                     : ($articleActionResult !== null
                     ? ($articleAction === 'create'
                         ? 'Thêm thành công'

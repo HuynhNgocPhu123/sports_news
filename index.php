@@ -30,6 +30,11 @@ if ($page === 'login') {
     exit;
 }
 
+if ($page === 'change-password') {
+    require __DIR__ . '/app/Views/pages/change-password.php';
+    exit;
+}
+
 if ($page === 'admin') {
     require __DIR__ . '/app/Views/pages/admin.php';
     exit;

@@ -40,6 +40,42 @@ final class UserController
         }
     }
 
+    public static function unlock(array $input): array
+    {
+        $userId = (int) ($input['user_id'] ?? 0);
+        $mysqli = null;
+
+        if ($userId < 1) {
+            return array('success' => false, 'message' => 'Tài khoản cần mở khóa không hợp lệ.');
+        }
+
+        try {
+            require_once __DIR__ . '/../Config/Database.php';
+            $mysqli = Database::connect();
+            $statement = $mysqli->prepare(
+                'UPDATE users SET status = 1 WHERE user_id = ? AND role_id = 2 AND status = 2'
+            );
+            $statement->bind_param('i', $userId);
+            $statement->execute();
+            $unlocked = $statement->affected_rows === 1;
+            $statement->close();
+            $mysqli->close();
+
+            return array(
+                'success' => $unlocked,
+                'message' => $unlocked
+                    ? 'Mở khóa tài khoản thành công.'
+                    : 'Không tìm thấy tài khoản đang bị khóa.',
+            );
+        } catch (mysqli_sql_exception $exception) {
+            if ($mysqli instanceof mysqli) {
+                $mysqli->close();
+            }
+
+            return array('success' => false, 'message' => 'Không thể mở khóa tài khoản lúc này.');
+        }
+    }
+
     public static function create(array $input): array
     {
         $username = trim((string) ($input['username'] ?? ''));
@@ -115,6 +151,7 @@ final class UserController
         if ($userId < 1 || $roleId < 1 || $username === '' || $email === '' || $fullName === '') {
             return array('success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin người dùng.');
         }
+
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return array('success' => false, 'message' => 'Email không hợp lệ.');
         }
@@ -187,6 +224,70 @@ final class UserController
             }
 
             return array('success' => false, 'message' => 'Không thể cập nhật người dùng lúc này.');
+        }
+    }
+
+    public static function changePassword(array $input, int $userId): array
+    {
+        $currentPassword = (string) ($input['current_password'] ?? '');
+        $newPassword = (string) ($input['new_password'] ?? '');
+        $confirmation = (string) ($input['new_password_confirmation'] ?? '');
+
+        if ($userId < 1) {
+            return array('success' => false, 'message' => 'Không xác định được tài khoản cần đổi mật khẩu.');
+        }
+        if ($currentPassword === '') {
+            return array('success' => false, 'message' => 'Bạn chưa nhập mật khẩu hiện tại.');
+        }
+        if ($newPassword === '') {
+            return array('success' => false, 'message' => 'Bạn chưa nhập mật khẩu mới.');
+        }
+        if ($confirmation === '') {
+            return array('success' => false, 'message' => 'Bạn chưa xác nhận mật khẩu mới.');
+        }
+
+        require_once __DIR__ . '/../Config/Database.php';
+        $mysqli = Database::connect();
+        try {
+            $statement = $mysqli->prepare(
+                'SELECT password FROM users WHERE user_id = ? AND role_id = 2 AND status = 1 LIMIT 1'
+            );
+            $statement->bind_param('i', $userId);
+            $statement->execute();
+            $statement->bind_result($passwordHash);
+            if (!$statement->fetch() || !password_verify($currentPassword, (string) $passwordHash)) {
+                $statement->close();
+                return array('success' => false, 'message' => 'Mật khẩu hiện tại không chính xác.');
+            }
+            $statement->close();
+
+            if (mb_strlen($newPassword) < 8) {
+                return array('success' => false, 'message' => 'Mật khẩu mới phải có ít nhất 8 ký tự.');
+            }
+            if ($newPassword !== $confirmation) {
+                return array('success' => false, 'message' => 'Mật khẩu mới và phần xác nhận mật khẩu không khớp nhau.');
+            }
+            if (password_verify($newPassword, (string) $passwordHash)) {
+                return array('success' => false, 'message' => 'Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+            }
+
+            $newPasswordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+            $update = $mysqli->prepare(
+                'UPDATE users SET password = ? WHERE user_id = ? AND role_id = 2 AND status = 1'
+            );
+            $update->bind_param('si', $newPasswordHash, $userId);
+            $update->execute();
+            $updated = $update->affected_rows === 1;
+            $update->close();
+
+            return array(
+                'success' => $updated,
+                'message' => $updated
+                    ? 'Đổi mật khẩu thành công.'
+                    : 'Không thể cập nhật mật khẩu. Vui lòng thử lại.',
+            );
+        } finally {
+            $mysqli->close();
         }
     }
 

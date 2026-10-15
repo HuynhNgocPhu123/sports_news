@@ -21,15 +21,15 @@ final class AuthController
             require_once __DIR__ . '/../Config/Database.php';
             $mysqli = Database::connect();
             $statement = $mysqli->prepare(
-                'SELECT users.user_id, users.password, users.role_id, roles.role_name, users.full_name
+                'SELECT users.user_id, users.password, users.role_id, users.status, roles.role_name, users.full_name
                  FROM users
                  INNER JOIN roles ON roles.role_id = users.role_id
-                 WHERE users.email = ? AND users.status = 1
+                 WHERE users.email = ?
                  LIMIT 1'
             );
             $statement->bind_param('s', $email);
             $statement->execute();
-            $statement->bind_result($userId, $passwordHash, $roleId, $roleName, $fullName);
+            $statement->bind_result($userId, $passwordHash, $roleId, $status, $roleName, $fullName);
 
             if (!$statement->fetch()) {
                 $statement->close();
@@ -40,6 +40,17 @@ final class AuthController
 
             $statement->close();
             $mysqli->close();
+
+            if ((int) $status === 2) {
+                return array(
+                    'success' => false,
+                    'message' => 'Tài khoản của bạn đã bị khóa vì vi phạm nguyên tắc cộng đồng.',
+                );
+            }
+
+            if ((int) $status !== 1) {
+                return array('success' => false, 'message' => 'Tài khoản của bạn hiện không thể đăng nhập.');
+            }
 
             if (!password_verify($password, $passwordHash)) {
                 return array('success' => false, 'message' => 'Email hoặc mật khẩu không chính xác.');

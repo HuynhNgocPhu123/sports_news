@@ -53,3 +53,27 @@ a { color: inherit; text-decoration: none; }
     .intro-list { display: none; }
     .register-card { padding: 30px 25px; }
 }
+
+/* Motion layer */
+body { background: radial-gradient(circle at 10% 10%, #dff4ed 0, transparent 28%), #eef4f3; overflow-x: hidden; }
+.register-page { animation: auth-page-in .7s cubic-bezier(.22,1,.36,1) both; border-radius: 18px; }
+.register-intro { animation: auth-intro-in .8s .08s ease both; }
+.register-card { animation: auth-card-in .8s .12s cubic-bezier(.22,1,.36,1) both; }
+.form-group { animation: auth-item-in .5s ease both; }
+.form-group:nth-child(2) { animation-delay: .08s; }
+.form-group:nth-child(3) { animation-delay: .16s; }
+.form-group:nth-child(4) { animation-delay: .24s; }
+.input-wrap input { border-radius: 9px; transition: border-color .2s, box-shadow .2s, transform .2s, background .2s; }
+.input-wrap input:focus { background: #fbfffe; transform: translateY(-1px); }
+.submit-button { border-radius: 9px; box-shadow: 0 8px 18px rgba(8,124,98,.2); transition: background .2s, transform .2s, box-shadow .2s; }
+.submit-button:active { box-shadow: 0 3px 8px rgba(8,124,98,.18); transform: translateY(1px) scale(.99); }
+.result-modal { animation: auth-modal-in .35s cubic-bezier(.22,1,.36,1) both; border-radius: 16px; }
+@keyframes auth-page-in { from { opacity: 0; transform: translateY(18px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes auth-intro-in { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes auth-card-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes auth-item-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes auth-modal-in { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .register-page, .register-intro, .register-card, .form-group, .result-modal { animation: none; }
+    .input-wrap input, .submit-button { transition: none; }
+}

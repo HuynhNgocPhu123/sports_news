@@ -11,6 +11,9 @@ $articleError = '';
 $selectedCategorySlug = trim((string) ($_GET['category'] ?? ''));
 $selectedCategoryName = '';
 $searchKeyword = trim((string) ($_GET['search'] ?? ''));
+$currentUser = $_SESSION['auth'] ?? null;
+$homeFlash = (string) ($_SESSION['home_flash'] ?? '');
+unset($_SESSION['home_flash']);
 
 try {
     require_once __DIR__ . '/../../Config/Database.php';
@@ -64,7 +67,6 @@ $heroArticle = $articles[0] ?? null;
 $latestArticles = array_slice($articles, 1, 4);
 $featuredArticles = array_slice($articles, 0, 4);
 $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
-$currentUser = $_SESSION['auth'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -96,7 +98,18 @@ $currentUser = $_SESSION['auth'] ?? null;
                     </form>
                     <?php if (is_array($currentUser)) : ?>
                         <div class="account-menu">
-                            <span class="account-name"><i class="fa-regular fa-user"></i> <?php echo e((string) $currentUser['full_name']); ?></span>
+                            <div class="account-dropdown">
+                                <span class="account-name"><i class="fa-regular fa-user"></i> <?php echo e((string) $currentUser['full_name']); ?><i class="fa-solid fa-chevron-down account-chevron"></i></span>
+                                <?php if ((int) ($currentUser['role_id'] ?? 0) === 2) : ?>
+                                    <div class="account-panel">
+                                        <strong><?php echo e((string) $currentUser['full_name']); ?></strong>
+                                        <small>Tài khoản người dùng</small>
+                                        <a class="account-panel-action" href="?page=change-password">
+                                            <i class="fa-solid fa-key"></i> Đổi mật khẩu
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                             <?php if ((int) ($currentUser['role_id'] ?? 0) === 1) : ?>
                                 <a class="admin-link" href="?page=admin"><i class="fa-solid fa-gauge-high"></i> Quản trị</a>
                             <?php endif; ?>
@@ -147,6 +160,9 @@ $currentUser = $_SESSION['auth'] ?? null;
     </script>
 
     <main class="container">
+        <?php if ($homeFlash !== '') : ?>
+            <div class="home-flash"><i class="fa-solid fa-circle-check"></i> <?php echo e($homeFlash); ?></div>
+        <?php endif; ?>
         <?php if ($searchKeyword !== '') : ?>
             <div class="category-page-heading">
                 <h1>Kết quả tìm kiếm</h1>
