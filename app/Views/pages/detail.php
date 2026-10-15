@@ -143,6 +143,7 @@ $articleDate = is_array($article) && !empty($article['published_at'])
                     <?php foreach ($categories as $category) : ?>
                         <li><a href="?category=<?php echo rawurlencode((string) $category['slug']); ?>"><?php echo detailEscape((string) $category['category_name']); ?></a></li>
                     <?php endforeach; ?>
+                    <li><a href="?page=contact">Liên hệ</a></li>
                 </ul>
             </div>
         </nav>
@@ -316,7 +317,7 @@ $articleDate = is_array($article) && !empty($article['published_at'])
     <footer>
         <div class="container footer-inner">
             <strong><i class="fa-solid fa-futbol"></i> <?php echo detailEscape($siteName); ?></strong>
-            <span>Giới thiệu &nbsp; | &nbsp; Điều khoản sử dụng &nbsp; | &nbsp; Chính sách bảo mật &nbsp; | &nbsp; Liên hệ</span>
+            <span>Giới thiệu &nbsp; | &nbsp; Điều khoản sử dụng &nbsp; | &nbsp; Chính sách bảo mật &nbsp; | &nbsp; <a href="?page=contact">Liên hệ</a></span>
             <span>© 2026 Football News. Tất cả quyền được bảo lưu.</span>
         </div>
     </footer>

@@ -92,7 +92,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
     <header>
         <div class="topbar">
             <div class="container topbar-inner">
-                <a class="brand" href="/sport_news/"><span class="brand-mark"><i class="fa-solid fa-futbol"></i></span><?php echo e($siteName); ?></a>
+                <a class="brand" href="./"><span class="brand-mark"><i class="fa-solid fa-futbol"></i></span><?php echo e($siteName); ?></a>
                 <div class="top-actions">
                     <form class="search" action="./" method="get">
                         <input
@@ -146,6 +146,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
                             </a>
                         </li>
                     <?php endforeach; ?>
+                    <li><a href="?page=contact">Liên hệ</a></li>
                 </ul>
             </div>
         </nav>
@@ -307,7 +308,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
     <footer>
         <div class="container footer-inner">
             <strong><i class="fa-solid fa-futbol"></i> <?php echo e($siteName); ?></strong>
-            <span>Giới thiệu &nbsp; | &nbsp; Điều khoản sử dụng &nbsp; | &nbsp; Chính sách bảo mật &nbsp; | &nbsp; Liên hệ</span>
+            <span>Giới thiệu &nbsp; | &nbsp; Điều khoản sử dụng &nbsp; | &nbsp; Chính sách bảo mật &nbsp; | &nbsp; <a href="?page=contact">Liên hệ</a></span>
             <span>© 2026 Football News. Tất cả quyền được bảo lưu.</span>
         </div>
     </footer>

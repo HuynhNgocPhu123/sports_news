@@ -103,6 +103,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
                     <?php foreach ($categories as $category) : ?>
                         <li><a class="<?php echo (string) $category['slug'] === $selectedCategorySlug ? 'active' : ''; ?>" href="?page=articles&amp;category=<?php echo rawurlencode((string) $category['slug']); ?>"><?php echo articlesEscape((string) $category['category_name']); ?></a></li>
                     <?php endforeach; ?>
+                    <li><a href="?page=contact">Liên hệ</a></li>
                 </ul>
             </div>
         </nav>
@@ -202,7 +203,7 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
     <footer>
         <div class="container footer-inner">
             <strong><i class="fa-solid fa-futbol"></i> <?php echo articlesEscape($siteName); ?></strong>
-            <span>© 2026 Football News. Tất cả quyền được bảo lưu.</span>
+            <span><a href="?page=contact">Liên hệ</a> &nbsp; | &nbsp; © 2026 Football News. Tất cả quyền được bảo lưu.</span>
         </div>
     </footer>
 </body>
