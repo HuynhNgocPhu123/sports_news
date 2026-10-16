@@ -7,7 +7,10 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 $currentUser = $_SESSION['auth'] ?? null;
-if (!is_array($currentUser) || (int) ($currentUser['role_id'] ?? 0) !== 2) {
+if (
+    !is_array($currentUser)
+    || !in_array((int) ($currentUser['role_id'] ?? 0), array(1, 2), true)
+) {
     header('Location: ./');
     exit;
 }
@@ -25,6 +28,9 @@ function e(string $value): string
 }
 
 $siteName = 'Football News';
+$isAdmin = (int) ($currentUser['role_id'] ?? 0) === 1;
+$returnUrl = $isAdmin ? '?page=admin' : './';
+$accountType = $isAdmin ? 'Quản trị viên' : 'Tài khoản người dùng';
 $passwordChanged = is_array($result) && $result['success'];
 ?>
 <!DOCTYPE html>
@@ -49,10 +55,10 @@ $passwordChanged = is_array($result) && $result['success'];
             </div>
         </section>
         <section class="change-password-card">
-            <a class="change-password-back" href="./"><i class="fa-solid fa-arrow-left"></i> Về trang chủ</a>
+            <a class="change-password-back" href="<?php echo e($returnUrl); ?>"><i class="fa-solid fa-arrow-left"></i> <?php echo $isAdmin ? 'Về trang quản trị' : 'Về trang chủ'; ?></a>
             <div class="change-password-heading">
                 <div class="change-password-icon"><i class="fa-solid fa-key"></i></div>
-                <span>Xin chào, <?php echo e((string) $currentUser['full_name']); ?></span>
+                <span><?php echo e($accountType); ?> · <?php echo e((string) $currentUser['full_name']); ?></span>
                 <h2>Đổi mật khẩu</h2>
                 <p>Nhập thông tin bên dưới để cập nhật mật khẩu của bạn.</p>
             </div>
@@ -60,8 +66,8 @@ $passwordChanged = is_array($result) && $result['success'];
                 <div class="change-password-success" role="status">
                     <div class="change-password-success-icon"><i class="fa-solid fa-check"></i></div>
                     <h3>Đổi mật khẩu thành công!</h3>
-                    <p>Mật khẩu của bạn đã được cập nhật. Vui lòng xác nhận để quay lại trang chủ.</p>
-                    <a class="change-password-home-button" href="./"><i class="fa-solid fa-house"></i> Xác nhận và về trang chủ</a>
+                    <p>Mật khẩu của bạn đã được cập nhật. Vui lòng xác nhận để quay lại <?php echo $isAdmin ? 'trang quản trị' : 'trang chủ'; ?>.</p>
+                    <a class="change-password-home-button" href="<?php echo e($returnUrl); ?>"><i class="fa-solid fa-house"></i> <?php echo $isAdmin ? 'Xác nhận và về quản trị' : 'Xác nhận và về trang chủ'; ?></a>
                 </div>
             <?php else : ?>
                 <?php if (is_array($result)) : ?>
@@ -78,7 +84,7 @@ $passwordChanged = is_array($result) && $result['success'];
                     <button class="change-password-submit" type="submit"><i class="fa-solid fa-check"></i> Cập nhật mật khẩu</button>
                 </form>
             <?php endif; ?>
-            <p class="change-password-footer">Bạn nhớ mật khẩu rồi? <a href="./">Quay lại trang chủ</a></p>
+            <p class="change-password-footer">Bạn nhớ mật khẩu rồi? <a href="<?php echo e($returnUrl); ?>"><?php echo $isAdmin ? 'Quay lại trang quản trị' : 'Quay lại trang chủ'; ?></a></p>
         </section>
     </main>
 </body>

@@ -250,7 +250,7 @@ final class UserController
         $mysqli = Database::connect();
         try {
             $statement = $mysqli->prepare(
-                'SELECT password FROM users WHERE user_id = ? AND role_id = 2 AND status = 1 LIMIT 1'
+                'SELECT password FROM users WHERE user_id = ? AND role_id IN (1, 2) AND status = 1 LIMIT 1'
             );
             $statement->bind_param('i', $userId);
             $statement->execute();
@@ -273,7 +273,7 @@ final class UserController
 
             $newPasswordHash = password_hash($newPassword, PASSWORD_DEFAULT);
             $update = $mysqli->prepare(
-                'UPDATE users SET password = ? WHERE user_id = ? AND role_id = 2 AND status = 1'
+                'UPDATE users SET password = ? WHERE user_id = ? AND role_id IN (1, 2) AND status = 1'
             );
             $update->bind_param('si', $newPasswordHash, $userId);
             $update->execute();
@@ -288,6 +288,97 @@ final class UserController
             );
         } finally {
             $mysqli->close();
+        }
+    }
+
+    public static function profile(int $userId): ?array
+    {
+        if ($userId < 1) {
+            return null;
+        }
+
+        require_once __DIR__ . '/../Config/Database.php';
+        $mysqli = Database::connect();
+
+        try {
+            $statement = $mysqli->prepare(
+                'SELECT username, email, full_name
+                 FROM users
+                 WHERE user_id = ? AND role_id IN (1, 2) AND status = 1
+                 LIMIT 1'
+            );
+            $statement->bind_param('i', $userId);
+            $statement->execute();
+            $statement->bind_result($username, $email, $fullName);
+
+            if (!$statement->fetch()) {
+                $statement->close();
+                return null;
+            }
+
+            $statement->close();
+
+            return array(
+                'username' => $username,
+                'email' => $email,
+                'full_name' => $fullName,
+            );
+        } finally {
+            $mysqli->close();
+        }
+    }
+
+    public static function updateProfile(array $input, int $userId): array
+    {
+        $username = trim((string) ($input['username'] ?? ''));
+        $email = trim((string) ($input['email'] ?? ''));
+        $fullName = trim((string) ($input['full_name'] ?? ''));
+        $mysqli = null;
+
+        if ($userId < 1 || $username === '' || $email === '' || $fullName === '') {
+            return array('success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin cá nhân.');
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return array('success' => false, 'message' => 'Email không hợp lệ.');
+        }
+        if (
+            mb_strlen($username) > 100
+            || mb_strlen($email) > 255
+            || mb_strlen($fullName) > 255
+        ) {
+            return array('success' => false, 'message' => 'Thông tin cá nhân vượt quá độ dài cho phép.');
+        }
+
+        try {
+            require_once __DIR__ . '/../Config/Database.php';
+            $mysqli = Database::connect();
+            $statement = $mysqli->prepare(
+                'UPDATE users
+                 SET username = ?, email = ?, full_name = ?
+                 WHERE user_id = ? AND role_id IN (1, 2) AND status = 1'
+            );
+            $statement->bind_param('sssi', $username, $email, $fullName, $userId);
+            $statement->execute();
+            $statement->close();
+            $mysqli->close();
+
+            return array(
+                'success' => true,
+                'message' => 'Cập nhật thông tin cá nhân thành công.',
+                'username' => $username,
+                'email' => $email,
+                'full_name' => $fullName,
+            );
+        } catch (mysqli_sql_exception $exception) {
+            if ($mysqli instanceof mysqli) {
+                $mysqli->close();
+            }
+
+            if ($exception->getCode() === 1062) {
+                return array('success' => false, 'message' => 'Username hoặc email đã tồn tại.');
+            }
+
+            return array('success' => false, 'message' => 'Không thể cập nhật thông tin cá nhân lúc này.');
         }
     }
 

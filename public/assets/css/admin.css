@@ -153,6 +153,91 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+}
+
+.admin-user-dropdown {
+  position: relative;
+}
+
+.admin-user small i {
+  margin-left: 5px;
+  font-size: 9px;
+  transition: transform .2s ease;
+}
+
+.admin-user-dropdown:hover .admin-user small i,
+.admin-user-dropdown:focus-within .admin-user small i {
+  transform: rotate(180deg);
+}
+
+.admin-account-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 210px;
+  padding: 15px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(20, 41, 56, .16);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity .2s, transform .2s;
+}
+
+.admin-account-panel::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 22px;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #fff;
+  border-left: 6px solid transparent;
+}
+
+.admin-user-dropdown:hover .admin-account-panel,
+.admin-user-dropdown:focus-within .admin-account-panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.admin-account-panel strong,
+.admin-account-panel small {
+  display: block;
+}
+
+.admin-account-panel strong {
+  font-size: 13px;
+}
+
+.admin-account-panel small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.admin-account-panel a {
+  display: block;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-account-panel a:hover {
+  background: #edf8f4;
+}
+
+.admin-account-panel a i {
+  width: 16px;
+  margin-right: 4px;
+  text-align: center;
 }
 
 .admin-user strong {

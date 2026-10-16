@@ -40,6 +40,11 @@ if ($page === 'change-password') {
     exit;
 }
 
+if ($page === 'profile') {
+    require __DIR__ . '/app/Views/pages/profile.php';
+    exit;
+}
+
 if ($page === 'contact') {
     require __DIR__ . '/app/Views/pages/contact.php';
     exit;

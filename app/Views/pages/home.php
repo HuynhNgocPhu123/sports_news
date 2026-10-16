@@ -110,10 +110,13 @@ $applicationPath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] 
                         <div class="account-menu">
                             <div class="account-dropdown">
                                 <span class="account-name"><i class="fa-regular fa-user"></i> <?php echo e((string) $currentUser['full_name']); ?><i class="fa-solid fa-chevron-down account-chevron"></i></span>
-                                <?php if ((int) ($currentUser['role_id'] ?? 0) === 2) : ?>
+                                <?php if (in_array((int) ($currentUser['role_id'] ?? 0), array(1, 2), true)) : ?>
                                     <div class="account-panel">
                                         <strong><?php echo e((string) $currentUser['full_name']); ?></strong>
-                                        <small>Tài khoản người dùng</small>
+                                        <small><?php echo (int) ($currentUser['role_id'] ?? 0) === 1 ? 'Quản trị viên' : 'Tài khoản người dùng'; ?></small>
+                                        <a class="account-panel-action" href="?page=profile">
+                                            <i class="fa-solid fa-user-pen"></i> Thông tin cá nhân
+                                        </a>
                                         <a class="account-panel-action" href="?page=change-password">
                                             <i class="fa-solid fa-key"></i> Đổi mật khẩu
                                         </a>

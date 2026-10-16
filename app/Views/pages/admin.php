@@ -240,6 +240,11 @@ $navigationIcons = [
                 Xem website
             </a>
 
+            <a href="?page=change-password">
+                <i class="fa-solid fa-key"></i>
+                Đổi mật khẩu
+            </a>
+
             <a href="?page=logout">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 Đăng xuất
@@ -257,34 +262,41 @@ $navigationIcons = [
                 <?php echo adminEscape($title); ?>
             </h1>
 
-            <div class="admin-user">
+            <div class="admin-user-dropdown">
+                <div class="admin-user">
 
-                <div class="admin-avatar">
-                    <?php
-                    echo adminEscape(
-                        strtoupper(
-                            substr(
-                                (string) ($currentUser['full_name'] ?? ''),
-                                0,
-                                1
-                            )
-                        )
-                    );
-                    ?>
-                </div>
-
-                <div>
-                    <strong>
+                    <div class="admin-avatar">
                         <?php
                         echo adminEscape(
-                            (string) ($currentUser['full_name'] ?? '')
+                            strtoupper(
+                                substr(
+                                    (string) ($currentUser['full_name'] ?? ''),
+                                    0,
+                                    1
+                                )
+                            )
                         );
                         ?>
-                    </strong>
+                    </div>
 
-                    <small>Quản trị viên</small>
+                    <div>
+                        <strong>
+                            <?php
+                            echo adminEscape(
+                                (string) ($currentUser['full_name'] ?? '')
+                            );
+                            ?>
+                        </strong>
+
+                        <small>Quản trị viên <i class="fa-solid fa-chevron-down"></i></small>
+                    </div>
                 </div>
-
+                <div class="admin-account-panel">
+                    <strong><?php echo adminEscape((string) ($currentUser['full_name'] ?? '')); ?></strong>
+                    <small>Quản trị viên</small>
+                    <a href="?page=profile"><i class="fa-solid fa-user-pen"></i> Thông tin cá nhân</a>
+                    <a href="?page=change-password"><i class="fa-solid fa-key"></i> Đổi mật khẩu</a>
+                </div>
             </div>
 
         </header>
